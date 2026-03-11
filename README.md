@@ -1,27 +1,45 @@
-# AI Media Billing Reconciliation Platform
+# 🧾 AI Media Billing Reconciliation Platform
 
-An AI-powered system designed to automate **media invoice extraction, validation, and reconciliation**.  
-Built during a hackathon to demonstrate how **AI agents and modern data workflows** can eliminate manual billing verification in media operations.
-
-The platform combines **AI document extraction, reconciliation logic, and user-facing applications** to streamline media billing workflows.
+> An AI-powered system designed to automate **media invoice extraction, validation, and reconciliation** — built during a hackathon to demonstrate how AI agents and modern data workflows can eliminate manual billing verification in media operations.
 
 ---
 
-# Overview
+## 📌 Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Repository Structure](#repository-structure)
+- [Components](#components)
+  - [1. MediaBillingNotebook](#1-mediabillingnotebook)
+  - [2. MediaBillingMobileApp](#2-mediabillingmobileapp)
+  - [3. MediaBillingReconciliation](#3-mediabillingreconciliation)
+- [Reconciliation Logic](#reconciliation-logic)
+- [Workflow](#workflow)
+- [Setup & Installation](#setup--installation)
+- [Example Use Case](#example-use-case)
+- [Hackathon Objective](#hackathon-objective)
+- [Future Improvements](#future-improvements)
+- [Contributors](#contributors)
+
+---
+
+## 📖 Overview
 
 Media agencies handle thousands of invoices across platforms such as TV, Digital, and Programmatic advertising. Manual reconciliation between invoices, campaign data, and billing systems is slow and error-prone.
 
 This project introduces an **AI-driven reconciliation system** that:
 
 1. Extracts structured data from invoices
-2. Standardizes invoice formats
+2. Standardizes invoice formats across vendors
 3. Reconciles them against expected campaign or billing data
-4. Generates discrepancy reports
+4. Generates detailed discrepancy reports
 5. Provides a mobile and web interface for review
 
 ---
 
-# Architecture
+## 🏗️ Architecture
+
+```
             +----------------------+
             |  Media Invoice Files |
             | (PDF / Image / CSV)  |
@@ -53,258 +71,279 @@ This project introduces an **AI-driven reconciliation system** that:
  | Reconciliation |         | Invoice Upload     |
  | Review         |         | & Reports          |
  +----------------+         +--------------------+
-
+```
 
 ---
 
-# Repository Structure
-NXT24BNGAccelerator-main
+## 📁 Repository Structure
+
+```
+NXT24BNGAccelerator-main/
 │
-├── MediaBillingMobileApp
-│ Mobile application for invoice upload and reconciliation reporting
+├── MediaBillingMobileApp/        # Mobile app for invoice upload & reporting
 │
-├── MediaBillingNotebook
-│ AI agents and document extraction logic
+├── MediaBillingNotebook/         # AI agents and document extraction logic
 │
-├── MediaBillingReconcilliation
-│ Web dashboard for reviewing reconciliation results
+├── MediaBillingReconciliation/   # Web dashboard for reconciliation review
 │
 └── README.md
-
+```
 
 ---
 
-# Components
+## 🧩 Components
 
-## 1. MediaBillingNotebook
+### 1. MediaBillingNotebook
 
-AI extraction and data processing layer.
+The AI extraction and data processing layer — demonstrates how **AI agents can parse and interpret unstructured media invoices**.
 
-This module demonstrates how **AI agents can parse and interpret unstructured media invoices**.
+#### ✨ Key Features
 
-### Key Features
-
-- Multi-format document ingestion
+- Multi-format document ingestion (PDF, Image, CSV)
 - AI-powered field extraction
-- Mapping different invoice formats to a standardized schema
+- Mapping vendor-specific invoice formats to a standardized schema
 - Agent-based processing pipeline
 
-### AI Agents
+#### 🤖 AI Agents
 
-The system demonstrates a **multi-agent architecture**:
+The system uses a **multi-agent architecture** powered by CrewAI:
 
-- Data Extraction Agent
-- Invoice Normalization Agent
-- Validation Agent
-- Reconciliation Preparation Agent
+| Agent | Responsibility |
+|-------|---------------|
+| Data Extraction Agent | Parses raw invoice documents |
+| Invoice Normalization Agent | Maps vendor formats to standard schema |
+| Validation Agent | Checks data quality and completeness |
+| Reconciliation Preparation Agent | Prepares data for matching |
 
-### Technologies
+#### 🛠️ Technologies
 
 - Python
 - Jupyter Notebook
-- CrewAI
+- [CrewAI](https://www.crewai.com/)
 - OpenAI / LLM APIs
 
-### Example Data Mapping
+#### 🗂️ Invoice Mappings
 
 Invoice templates are standardized using JSON mappings:
+
+```
 mapping/
-media_invoice_1.json
-media_invoice_2.json
-media_invoice_3.json
-media_invoice_4.json
-media_invoice_5.json
+├── media_invoice_1.json
+├── media_invoice_2.json
+├── media_invoice_3.json
+├── media_invoice_4.json
+└── media_invoice_5.json
+```
 
-
-These mappings help convert vendor-specific invoices into a **common schema**.
+These mappings convert vendor-specific invoices into a **common schema** for downstream reconciliation.
 
 ---
 
-# 2. MediaBillingMobileApp
+### 2. MediaBillingMobileApp
 
-Mobile application that allows users to:
+A mobile application enabling field users to upload invoices, extract data, and view reconciliation reports on the go.
 
-- Upload invoices
-- Extract invoice data
-- View reconciliation reports
+#### ✨ Features
 
-### Features
+- User login & authentication
+- Invoice upload and AI extraction interface
+- Reconciliation report viewer
 
-- Login screen
-- Invoice extraction interface
-- Reconciliation report viewing
-
-### Tech Stack
+#### 🛠️ Tech Stack
 
 - React Native
 - TypeScript
 - Expo
 - REST API integration
 
-### Main Screens
-LoginScreen
-InvoiceExtractorScreen
-ReconciliationReportScreen
+#### 📱 Screens
 
-
-### Project Structure
-MediaBillingMobileApp/src
+```
+MediaBillingMobileApp/src/
 │
-├── navigation
-│ AppNavigator.tsx
+├── navigation/
+│   └── AppNavigator.tsx
 │
-├── screens
-│ LoginScreen.tsx
-│ InvoiceExtractorScreen.tsx
-│ ReconciliationReportScreen.tsx
+├── screens/
+│   ├── LoginScreen.tsx
+│   ├── InvoiceExtractorScreen.tsx
+│   └── ReconciliationReportScreen.tsx
 │
-├── services
-│ api.ts
+├── services/
+│   └── api.ts
 │
-└── types
-
+└── types/
+```
 
 ---
 
-# 3. MediaBillingReconciliation
+### 3. MediaBillingReconciliation
 
-Web-based interface to **review discrepancies and reconciliation results**.
+A web-based interface to **review discrepancies and reconciliation results** in detail.
 
-Users can:
+#### ✨ Features
 
-- View extracted invoice data
-- Compare expected vs billed amounts
-- Review discrepancies
-- Generate reconciliation reports
+- View extracted invoice data side-by-side
+- Compare expected vs. billed amounts
+- Drill into individual discrepancies
+- Generate and export reconciliation reports
 
-### Tech Stack
+#### 🛠️ Tech Stack
 
 - React
 - TypeScript
 - CSS
-- Vite / modern frontend tooling
+- Vite
 
-### Key UI Components
-DiscrepancyReport
-DiscrepancyReview
-InvoiceComparison
+#### 🖥️ Key UI Components
 
+| Component | Purpose |
+|-----------|---------|
+| `DiscrepancyReport` | High-level report of all flagged issues |
+| `DiscrepancyReview` | Detailed view for individual discrepancies |
+| `InvoiceComparison` | Side-by-side invoice vs. expected data view |
 
 ---
 
-# Reconciliation Logic
+## ⚖️ Reconciliation Logic
 
-The reconciliation engine compares:
+The reconciliation engine compares invoice data against expected campaign data across key fields:
 
-| Field | Invoice Data | Expected Data |
-|------|--------------|---------------|
+| Field | Source: Invoice | Source: Expected |
+|-------|-----------------|------------------|
 | Campaign | Invoice | Campaign system |
 | Media Vendor | Invoice | Contract |
 | Amount | Invoice | Planned spend |
 | Impressions | Invoice | Delivery report |
 | Billing Period | Invoice | Campaign schedule |
 
-The system flags discrepancies such as:
+### 🚩 Flagged Discrepancy Types
 
-- Overbilling
-- Missing campaign data
-- Incorrect billing periods
-- Media vendor mismatches
-
----
-
-# Workflow
-
-### Step 1 — Upload Invoice
-
-User uploads invoice through:
-
-- Mobile app
-- Web interface
-
-### Step 2 — AI Extraction
-
-AI agents extract structured fields:
-Vendor
-Campaign
-Invoice Amount
-Billing Period
-Media Type
-Line Items
-
-
-### Step 3 — Data Normalization
-
-Different invoice formats are converted to a **standard schema**.
-
-### Step 4 — Reconciliation
-
-Invoice data is compared against expected campaign data.
-
-### Step 5 — Discrepancy Report
-
-System generates a report highlighting:
-
-- mismatches
-- anomalies
-- potential billing errors
+- **Overbilling** — Invoice amount exceeds contracted or planned spend
+- **Missing Campaign Data** — Invoice references an unrecognized campaign
+- **Incorrect Billing Period** — Dates do not align with the campaign schedule
+- **Media Vendor Mismatch** — Vendor name or ID does not match contract records
 
 ---
 
-# Setup
+## 🔄 Workflow
 
-## 1. Clone Repository
+```
+Step 1 ── Upload Invoice
+           └─ Via mobile app or web interface
+
+Step 2 ── AI Extraction
+           └─ Agents extract: Vendor, Campaign, Invoice Amount,
+              Billing Period, Media Type, Line Items
+
+Step 3 ── Data Normalization
+           └─ Vendor-specific formats → standard schema
+
+Step 4 ── Reconciliation
+           └─ Invoice data compared against expected campaign data
+
+Step 5 ── Discrepancy Report
+           └─ Flags mismatches, anomalies, and potential billing errors
+```
+
+---
+
+## ⚙️ Setup & Installation
+
+### Prerequisites
+
+- Python 3.8+
+- Node.js 18+
+- npm / Expo CLI
+
+### Clone the Repository
 
 ```bash
-git clone https://github.com/<your-repo>/media-reconciliation-agent.git
+git clone https://github.com/akhiljoe/media-reconciliation-agent.git
 cd media-reconciliation-agent
+```
 
-## Running the Notebook
+---
+
+### 🐍 Running the Notebook (AI Extraction Layer)
+
+```bash
 cd MediaBillingNotebook
 pip install -r requirements.txt
 jupyter notebook
+```
 
-### Open
-MediaBillingCrew.ipynb
+Then open **`MediaBillingCrew.ipynb`** in the Jupyter interface.
 
-## Running the Web App
-cd MediaBillingReconcilliation
+---
+
+### 🌐 Running the Web Dashboard
+
+```bash
+cd MediaBillingReconciliation
 npm install
 npm run dev
+```
 
-## Running the Mobile App
+---
+
+### 📱 Running the Mobile App
+
+```bash
 cd MediaBillingMobileApp
 npm install
 npm start
-#### This will start the Expo development server.
+```
 
+This will start the **Expo development server**. Scan the QR code with the Expo Go app on your device.
 
-## Example Use Case
+---
+
+## 💡 Example Use Case
+
 Media agencies often receive hundreds of invoices monthly. Historically, manual verification required:
-* **Downloading** individual invoices.
-* **Checking** campaign schedules manually.
-* **Matching** amounts against internal records.
-* **Generating** status reports.
 
-This system replaces these manual steps with an automated, intelligent workflow.
+- 📥 **Downloading** individual invoices from multiple platforms
+- 🔍 **Checking** campaign schedules manually in spreadsheets
+- 🔢 **Matching** amounts against internal records line by line
+- 📊 **Generating** status reports for finance and operations teams
 
-## Hackathon Objective
-The goal of this hackathon project was to demonstrate how AI agents can transform operational workflows in media finance and billing operations.
+This system replaces all of these manual steps with an **automated, intelligent workflow** — reducing processing time from days to minutes.
+
+---
+
+## 🏆 Hackathon Objective
+
+The goal of this hackathon project was to demonstrate how **AI agents can transform operational workflows** in media finance and billing operations.
 
 ### Key Outcomes
-* **Automated Invoice Parsing:** Eliminates manual data entry.
-* **Standardized Data Extraction:** Ensures consistent formatting across different vendors.
-* **Intelligent Reconciliation:** Automatically matches invoice data against campaign schedules.
-* **Interactive Dashboards:** Provides visual insights into billing status and discrepancies.
 
-## Future Improvements
-Potential enhancements to scale this prototype into a production-grade tool include:
-* **Full Backend API Service:** For seamless software integration.
-* **Platform Integration:** Direct connections with media platforms like Google Ads, Meta, and DV360.
-* **Automated Fraud Detection:** Identifying suspicious billing patterns.
-* **Machine Learning Anomaly Detection:** Flagging outliers in pricing or volume.
-* **Real-time Reconciliation Pipelines:** Processing invoices as they arrive.
-* **Enterprise Billing Integration:** Syncing data directly with ERP systems.
+| Outcome | Description |
+|---------|-------------|
+| 🤖 Automated Invoice Parsing | Eliminates manual data entry across invoice formats |
+| 📐 Standardized Data Extraction | Ensures consistent formatting across different vendors |
+| 🔗 Intelligent Reconciliation | Automatically matches invoices against campaign schedules |
+| 📊 Interactive Dashboards | Visual insights into billing status and discrepancies |
 
-## Contributors
-* **Hackathon Team**
+---
+
+## 🚀 Future Improvements
+
+Potential enhancements to scale this prototype into a production-grade tool:
+
+- **Full Backend API Service** — Seamless integration with existing software stacks
+- **Platform Integration** — Direct connections with Google Ads, Meta, and DV360
+- **Automated Fraud Detection** — Identifying suspicious or anomalous billing patterns
+- **ML Anomaly Detection** — Flagging statistical outliers in pricing or volume data
+- **Real-time Reconciliation Pipelines** — Processing invoices as they arrive
+- **Enterprise Billing Integration** — Syncing directly with ERP and finance systems
+
+---
+
+## 👥 Contributors
+
+- **Hackathon Team** — NXT24 BNG Accelerator
+
+---
+
+> *Built with ❤️ at a hackathon to modernize media billing operations using AI.*
