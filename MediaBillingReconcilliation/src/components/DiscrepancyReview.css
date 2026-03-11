@@ -1,0 +1,270 @@
+/* DiscrepancyReview.css */
+.discrepancy-review {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.review-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.review-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.review-header p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Summary Cards */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background: var(--card-background);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  border-left: 4px solid var(--primary-color);
+}
+
+.summary-card.success {
+  border-left-color: var(--success-color);
+}
+
+.summary-card.warning {
+  border-left-color: var(--warning-color);
+}
+
+.summary-card.info {
+  border-left-color: var(--info-color);
+}
+
+.summary-card h3 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-card .card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* No Discrepancies */
+.no-discrepancies {
+  text-align: center;
+  padding: 3rem;
+  background: var(--success-light);
+  border-radius: 12px;
+  margin: 1rem 0;
+}
+
+.no-discrepancies p {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--success-dark);
+  margin: 0;
+}
+
+/* Severity Badge */
+.severity-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.severity-badge.critical {
+  background: #fee;
+  color: #c00;
+}
+
+.severity-badge.high {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.severity-badge.medium {
+  background: #fffde7;
+  color: #f57f17;
+}
+
+.severity-badge.low {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.severity-badge.unknown {
+  background: #f5f5f5;
+  color: #757575;
+}
+
+/* Table Cell Styles */
+.campaign-cell {
+  font-weight: 600;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-cell {
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+.severity-cell {
+  text-align: center;
+}
+
+/* Discrepancies Section */
+.discrepancies-section {
+  background: var(--card-background);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.discrepancies-section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.discrepancies-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.discrepancies-table thead {
+  background: var(--table-header-bg);
+}
+
+.discrepancies-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.discrepancies-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.discrepancies-table tbody tr:hover {
+  background: var(--row-hover);
+}
+
+.value-cell {
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
+}
+
+.difference-cell {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* Review Actions */
+.review-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn {
+  padding: 0.875rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--card-background);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--secondary-hover);
+  transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .discrepancy-review {
+    padding: 1rem;
+  }
+
+  .review-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .table-container {
+    overflow-x: scroll;
+  }
+
+  .discrepancies-table {
+    font-size: 0.8rem;
+  }
+
+  .discrepancies-table th,
+  .discrepancies-table td {
+    padding: 0.5rem;
+  }
+}

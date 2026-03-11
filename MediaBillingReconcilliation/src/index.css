@@ -1,0 +1,221 @@
+/* CSS Variables for Light Theme (White & Blue) */
+:root,
+[data-theme="light"] {
+  /* Primary Colors - Blue Theme */
+  --primary-color: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --primary-lighter: #a5b4fc;
+  
+  /* Secondary Colors */
+  --secondary-color: #64748b;
+  --secondary-dark: #475569;
+  --secondary-hover: #f1f5f9;
+  
+  /* Background Colors - White Theme */
+  --page-background: #ffffff;
+  --card-background: #ffffff;
+  --left-panel-bg: #f3f4f6;
+  --right-panel-bg: #ffffff;
+  --secondary-bg: #f8fafc;
+  
+  /* Text Colors */
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  
+  /* Border & Input */
+  --border-color: #e5e7eb;
+  --input-border: #d1d5db;
+  --input-background: #ffffff;
+  --focus-ring: rgba(99, 102, 241, 0.2);
+  
+  /* Header & Footer */
+  --header-background: #ffffff;
+  --header-border: #e5e7eb;
+  --footer-background: #f9fafb;
+  --footer-border: #e5e7eb;
+  
+  /* Status Colors */
+  --success-color: #10b981;
+  --success-light: #d1fae5;
+  --success-dark: #059669;
+  --warning-color: #f59e0b;
+  --warning-light: #fef3c7;
+  --warning-dark: #d97706;
+  --error-color: #ef4444;
+  --error-light: #fee2e2;
+  --error-dark: #dc2626;
+  
+  /* Links */
+  --link-color: #6366f1;
+  --link-hover: #4f46e5;
+  
+  /* Table */
+  --table-header-bg: #f8fafc;
+  --row-hover: #f9fafb;
+  
+  /* Progress */
+  --progress-bg: #e5e7eb;
+  
+  /* Toggle Button */
+  --toggle-background: #f3f4f6;
+  --toggle-border: #e5e7eb;
+  --toggle-hover: #e5e7eb;
+  
+  /* Disabled */
+  --disabled-bg: #e5e7eb;
+  --disabled-text: #9ca3af;
+}
+
+/* CSS Variables for Dark Theme */
+[data-theme="dark"] {
+  /* Primary Colors - Blue Theme for Dark */
+  --primary-color: #818cf8;
+  --primary-light: #a5b4fc;
+  --primary-dark: #6366f1;
+  --primary-lighter: #c7d2fe;
+  
+  /* Secondary Colors */
+  --secondary-color: #94a3b8;
+  --secondary-dark: #64748b;
+  --secondary-hover: #1e293b;
+  
+  /* Background Colors - Dark Theme */
+  --page-background: #0f172a;
+  --card-background: #1e293b;
+  --left-panel-bg: #1e293b;
+  --right-panel-bg: #0f172a;
+  --secondary-bg: #334155;
+  
+  /* Text Colors */
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  
+  /* Border & Input */
+  --border-color: #334155;
+  --input-border: #475569;
+  --input-background: #1e293b;
+  --focus-ring: rgba(129, 140, 248, 0.3);
+  
+  /* Header & Footer */
+  --header-background: #1e293b;
+  --header-border: #334155;
+  --footer-background: #1e293b;
+  --footer-border: #334155;
+  
+  /* Status Colors */
+  --success-color: #34d399;
+  --success-light: #064e3b;
+  --success-dark: #10b981;
+  --warning-color: #fbbf24;
+  --warning-light: #78350f;
+  --warning-dark: #f59e0b;
+  --error-color: #f87171;
+  --error-light: #7f1d1d;
+  --error-dark: #ef4444;
+  
+  /* Links */
+  --link-color: #818cf8;
+  --link-hover: #a5b4fc;
+  
+  /* Table */
+  --table-header-bg: #334155;
+  --row-hover: #334155;
+  
+  /* Progress */
+  --progress-bg: #334155;
+  
+  /* Toggle Button */
+  --toggle-background: #334155;
+  --toggle-border: #475569;
+  --toggle-hover: #475569;
+  
+  /* Disabled */
+  --disabled-bg: #334155;
+  --disabled-text: #64748b;
+}
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: var(--text-primary);
+  background-color: var(--page-background);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--page-background);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#root {
+  width: 100%;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Scrollbar styling for Light Theme */
+[data-theme="light"] ::-webkit-scrollbar {
+  width: 8px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Scrollbar styling for Dark Theme */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}

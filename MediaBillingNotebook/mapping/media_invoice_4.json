@@ -1,0 +1,68 @@
+{
+    "Header": {
+        "Invoice Ref": "INV-2025-004",
+        "Issued On": "2025-11-16",
+        "Agency": "NextGen Marketing",
+        "Coverage Dates": "2025-10-01 to 2025-10-31",
+        "Currency": "USD",
+        "Invoice Sum": "$18,000",
+        "Tax": "VAT 13%",
+        "Due Terms": "Net 30",
+        "Contact": "support@nextgen.com"
+    },
+    "LineItems": [
+        {
+            "Campaign": "Summer Blast",
+            "IO": "IO-900",
+            "Ad Unit": "Leaderboard Banner",
+            "Format": "Display",
+            "Booked": "400,000",
+            "Billed": "350,000",
+            "Clicks": "5,682",
+            "Rate": "$5 CPM",
+            "Discount": "0%",
+            "Net Cost": "$3,000",
+            "Geo": "US",
+            "Dates": "2025-11-01 to 2025-11-15",
+            "Creative": "CR-101",
+            "Tracking": "AS-500",
+            "Notes": "Bonus Impr."
+        },
+        {
+            "Campaign": "Tech Expo",
+            "IO": "IO-901",
+            "Ad Unit": "Video Mid-roll",
+            "Format": "Video",
+            "Booked": "450,000",
+            "Billed": "390,000",
+            "Clicks": "6,000",
+            "Rate": "$6 CPM",
+            "Discount": "5%",
+            "Net Cost": "$3,500",
+            "Geo": "UK",
+            "Dates": "2025-10-05 to 2025-10-20",
+            "Creative": "CR-102",
+            "Tracking": "AS-501",
+            "Notes": "Make-good"
+        },
+        {
+            "Campaign": "Holiday Deals",
+            "IO": "IO-902",
+            "Ad Unit": "Native Article",
+            "Format": "Native",
+            "Booked": "500,000",
+            "Billed": "460,000",
+            "Clicks": "7,000",
+            "Rate": "$7 CPM",
+            "Discount": "10%",
+            "Net Cost": "$4,000",
+            "Geo": "CA",
+            "Dates": "2025-10-10 to 2025-10-25",
+            "Creative": "CR-103",
+            "Tracking": "AS-502",
+            "Notes": "Standard"
+        }
+    ],
+    "Vendor": "NextGen Marketing",
+    "InvoiceIndex": 4
+}
