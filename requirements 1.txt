@@ -1,0 +1,112 @@
+# ============================================
+# DEVELOPMENT REQUIREMENTS 
+# Compatible with Python 3.8–3.12
+# ============================================
+
+# Core AI Framework
+crewai==0.70.0
+crewai-tools==0.12.0
+
+# LLM Integration
+litellm==1.44.22
+replicate==0.25.0
+openai==1.109.1
+langchain==0.2.17                 # added for compatibility with crewai
+langchain-openai==0.1.7
+langchain-community==0.2.6
+langsmith==0.1.112                # compatible with langchain 0.2.x
+
+# Web Search & Scraping
+tavily-python==0.5.0
+
+# HTTP & API Tools
+requests==2.32.3                  # upgraded (fixes tqdm/datasets conflict)
+httpx==0.27.0
+
+# Environment Management
+python-dotenv==1.0.0
+
+# Gmail Integration (MCP Server)
+google-auth==2.29.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.122.0
+
+# Database & Structured Data
+sqlalchemy==2.0.31                # bumped for mem0ai/ORM compatibility
+psycopg2-binary==2.9.9
+pymysql==1.1.0
+pandas==2.2.1
+numpy==1.26.4
+
+# Jupyter Notebook
+jupyter==1.0.0
+notebook==7.1.2
+ipykernel==6.29.3
+ipywidgets==8.1.2
+
+# Utilities
+tqdm==4.66.3                      # upgraded
+rich==13.7.1
+colorama==0.4.6
+pyyaml==6.0.1
+
+# Testing
+pytest==8.1.1
+pytest-asyncio==0.23.6
+pytest-cov==5.0.0
+
+# Code Quality
+black==24.3.0
+flake8==7.0.0
+pylint==3.1.0
+mypy==1.9.0
+
+# Documentation
+sphinx==7.2.6
+
+
+# ============================================
+# AI Agent Evaluation & Observability
+# ============================================
+
+deepeval==1.2.8
+protobuf==4.25.3
+
+
+# Observability & tracing (Python 3.12 compatible)
+opentelemetry-api==1.24.0
+opentelemetry-sdk==1.24.0
+opentelemetry-exporter-otlp==1.24.0
+opentelemetry-exporter-otlp-proto-http==1.24.0
+opentelemetry-exporter-otlp-proto-grpc==1.24.0
+opentelemetry-exporter-otlp-proto-common==1.24.0
+opentelemetry-proto==1.24.0
+opentelemetry-instrumentation==0.45b0
+opentelemetry-instrumentation-asgi==0.45b0
+opentelemetry-instrumentation-fastapi==0.45b0
+opentelemetry-util-http==0.45b0
+opentelemetry-semantic-conventions==0.45b0
+
+
+# ============================================
+# Model Context Protocol (MCP) Integration
+# ============================================
+
+# (Private repo packages — comment kept for reference)
+# mcp==0.3.1
+# mcp-client==0.3.1
+# mcp-server==0.3.1
+# crewai-mcp==0.3.0
+# mcp-gmail==0.1.2
+
+
+# ============================================
+# External Communication Integrations (MCP)
+# ============================================
+
+twilio==9.0.3
+
+# Context management and event routing
+aiohttp==3.10.11                  # upgraded
+websockets==12.0
