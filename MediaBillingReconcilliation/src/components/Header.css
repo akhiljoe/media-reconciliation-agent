@@ -1,0 +1,146 @@
+.header {
+  background: var(--header-background);
+  border-bottom: 2px solid var(--header-border);
+  padding: 1.5rem 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo-icon {
+  font-size: 2.5rem;
+}
+
+.logo h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.tagline {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.theme-toggle {
+  position: relative;
+  background: var(--toggle-background);
+  border: 2px solid var(--toggle-border);
+  border-radius: 20px;
+  width: 64px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  transition: all 0.3s ease;
+  overflow: visible;
+}
+
+.theme-toggle:hover {
+  border-color: var(--primary-color);
+}
+
+.theme-toggle::before {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+  left: 3px;
+  z-index: 1;
+}
+
+[data-theme="dark"] .theme-toggle::before {
+  transform: translateX(32px);
+}
+
+.theme-icon {
+  font-size: 0.9rem;
+  z-index: 2;
+  transition: opacity 0.3s ease;
+  line-height: 1;
+}
+
+.theme-icon-light {
+  opacity: 1;
+}
+
+.theme-icon-dark {
+  opacity: 0.4;
+}
+
+[data-theme="dark"] .theme-icon-light {
+  opacity: 0.4;
+}
+
+[data-theme="dark"] .theme-icon-dark {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 1rem;
+  }
+
+  .header-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .logo h1 {
+    font-size: 1.5rem;
+  }
+
+  .logo-icon {
+    font-size: 2rem;
+  }
+
+  .header-right {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .tagline {
+    font-size: 0.875rem;
+  }
+
+  .theme-toggle {
+    width: 56px;
+    height: 28px;
+  }
+
+  .theme-toggle::before {
+    width: 20px;
+    height: 20px;
+  }
+
+  [data-theme="dark"] .theme-toggle::before {
+    transform: translateX(28px);
+  }
+
+  .theme-icon {
+    font-size: 0.8rem;
+  }
+}

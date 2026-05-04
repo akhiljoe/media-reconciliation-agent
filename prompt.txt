@@ -1,0 +1,50 @@
+Role: Senior Azure Cloud Architect & Full-Stack Engineer.
+Task: Create a "Lean Deployment Plan" to move a local full-stack project to Azure for a demo.
+
+Core Tech Stack (Inferred from Structure):
+
+Frontend: React (Vite) located in ./MediaBillingReconcilliation
+
+Backend: Python (Flask/FastAPI) located in ./MediaBillingReconcilliationBackend
+
+Entry Point: app.py, using requirements.txt
+
+Mobile (Out of Scope): Ignore the Expo/Mobile directory for this deployment.
+
+Strict Constraints:
+
+Zero-Cost Goal: Use Azure Free Tiers or Serverless consumption plans only.
+
+No Persistence: No DBs or Blobs. All file processing must be ephemeral (in-memory or /tmp).
+
+Simplicity First: No Docker, no Kubernetes, and no complex VNETs.
+
+Managed Services: Prefer PaaS/Serverless (e.g., Azure Static Web Apps, App Service, or Functions).
+
+Please provide a technical guide covering:
+
+1. The Architecture Recommendation
+
+What is the most cost-effective way to host this? (e.g., Should I use Azure Static Web Apps with a 'Bring Your Own API' backend, or an App Service Free Tier for both?)
+
+2. Critical Code Refactoring
+
+File Uploads: How should I modify app.py to handle uploads safely in a serverless/ephemeral environment?
+
+Networking: Provide the specific CORS configuration needed for the React frontend to talk to the Azure backend.
+
+Environment: How to handle the transition from localhost URLs to production Azure URLs.
+
+3. The Deployment Script
+
+Provide a sequence of Azure CLI commands to:
+
+Create the Resource Group.
+
+Provision the specific services.
+
+Deploy the code directly from the local folder (avoiding complex CI/CD setup for now).
+
+4. Project Cleanup
+
+Confirm which files/folders must be excluded via .zip or .gitignore to prevent deployment bloat (e.g., venv, node_modules, .expo).
