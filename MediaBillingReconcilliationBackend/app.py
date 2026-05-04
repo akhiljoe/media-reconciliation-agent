@@ -9,9 +9,16 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+import platform
+import pytesseract
 
 app = Flask(__name__)
 CORS(app)
+
+
+# FIX: Windows Tesseract Path
+if platform.system() == "Windows":
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 # Directory to store uploaded files
 UPLOAD_FOLDER = Path(__file__).parent / 'uploads'
