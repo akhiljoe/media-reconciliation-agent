@@ -10,6 +10,13 @@ from PIL import Image
 import pdfplumber
 from io import BytesIO
 from typing import Dict, Any, Optional
+import json
+import platform
+import pytesseract
+
+if platform.system() == "Windows":
+    # Ensure this path matches your installation
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 # Initialize OpenAI for intelligent parsing (only if API key available)
 llm = None
@@ -33,6 +40,7 @@ def detect_file_type(filepath: str) -> str:
         '.xlsx': 'excel',
         '.xls': 'excel',
         '.xml': 'xml',
+        '.json': 'json',
         '.jpg': 'image',
         '.jpeg': 'image',
         '.png': 'image',
@@ -184,6 +192,27 @@ def parse_xml(filepath: str) -> Dict[str, Any]:
             'error': f"XML parsing failed: {str(e)}"
         }
 
+def parse_json(filepath: str) -> Dict[str, Any]:
+    """Parse JSON file and return structured data"""
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        return {
+            'success': True,
+            'file_type': 'json',
+            'raw_content': json.dumps(data, indent=2),
+            'parsed_data': data,
+            'metadata': {
+                'parser': 'python_json_builtin'
+            }
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'error': f"JSON parsing failed: {str(e)}"
+        }
+    
 def parse_image(filepath: str) -> Dict[str, Any]:
     """Parse image using OpenAI Vision API for intelligent extraction"""
     try:
@@ -280,6 +309,7 @@ def parse_file(filepath: str) -> Dict[str, Any]:
         'csv': parse_csv,
         'excel': parse_excel,
         'xml': parse_xml,
+        'json': parse_json,
         'image': parse_image,
         'text': parse_pdf  # Reuse PDF parser for text files
     }

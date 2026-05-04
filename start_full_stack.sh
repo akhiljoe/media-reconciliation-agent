@@ -9,11 +9,20 @@ echo ""
 # Get the script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+    PY="python"
+else
+    PY="python3"
+fi
+
 # Check for Python
-if ! command -v python3 &> /dev/null; then
+# if ! command -v python3 &> /dev/null; then
+if ! command -v $PY &> /dev/null; then
     echo "❌ Python 3 is not installed. Please install Python 3.8 or higher."
     exit 1
 fi
+
+export PYTHONIOENCODING=utf-8
 
 # Check for Node.js
 if ! command -v node &> /dev/null; then
@@ -45,17 +54,25 @@ echo "🔧 Starting Flask Backend..."
 cd "$SCRIPT_DIR/MediaBillingReconcilliationBackend"
 
 # Install backend dependencies if needed
-if [ ! -d "venv" ]; then
+if [ ! -d "../venv" ]; then
     echo "📦 Creating virtual environment..."
-    python3 -m venv venv
+    $PY -m venv ../venv
 fi
 
-source venv/bin/activate
+# source venv/bin/activate
+if [ -d "../venv/Scripts" ]; then
+    source ../venv/Scripts/activate
+else
+    source ../venv/bin/activate
+fi
+
 echo "📦 Installing backend dependencies..."
-pip install -q flask flask-cors pandas openpyxl pdfplumber python-dotenv crewai crewai-tools
+# pip install -q flask flask-cors pandas openpyxl pdfplumber python-dotenv crewai crewai-tools
+python -m pip install -q flask flask-cors pandas openpyxl pdfplumber python-dotenv crewai crewai-tools
 
 echo "🌐 Starting Flask server on http://localhost:5000"
-python app.py > backend.log 2>&1 &
+# python app.py > backend.log 2>&1 &
+$PY app.py > backend.log 2>&1 &
 BACKEND_PID=$!
 echo "   Backend PID: $BACKEND_PID"
 
