@@ -12,17 +12,27 @@ from pathlib import Path
 import platform
 import pytesseract
 
+from services.auth import authenticate, require_auth
+
 app = Flask(__name__)
-CORS(app)
+
+# CORS scoped to allowed origins (env: ALLOWED_ORIGINS, comma separated)
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+CORS(app, origins=ALLOWED_ORIGINS)
 
 
-# FIX: Windows Tesseract Path
+# Windows-only tesseract path (kept for local Windows dev, no-op on Linux container)
 if platform.system() == "Windows":
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-# Directory to store uploaded files
-UPLOAD_FOLDER = Path(__file__).parent / 'uploads'
-UPLOAD_FOLDER.mkdir(exist_ok=True)
+# Folder paths (env-overridable for container deploys)
+UPLOAD_FOLDER = Path(os.getenv('UPLOAD_FOLDER', str(Path(__file__).parent / 'uploads')))
+UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+
+MAPPING_FOLDER = os.getenv('MAPPING_FOLDER', str(Path(__file__).parent / 'mapping'))
+
+OUTPUT_FOLDER = os.getenv('OUTPUT_FOLDER', str(Path(__file__).parent / 'output'))
+Path(OUTPUT_FOLDER).mkdir(parents=True, exist_ok=True)
 
 # Add paths for imports
 sys.path.append(str(Path(__file__).parent))
@@ -34,10 +44,42 @@ def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'service': 'iPhone 17 Campaign Generator API'
+        'service': 'Media Billing Reconciliation API'
     })
 
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """
+    Authenticate against the AUTH_USERS env var.
+    Body: { "username": "...", "password": "..." }
+    Returns: { "token": "<jwt>", "username": "...", "expires_in": <seconds> }
+    """
+    if not request.is_json:
+        return jsonify({'error': 'Request must be JSON'}), 400
+
+    username = (request.json.get('username') or '').strip()
+    password = request.json.get('password') or ''
+
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+
+    token, err = authenticate(username, password)
+
+    if err == 'locked':
+        return jsonify({'error': 'Too many failed attempts. Try again in 1 minute.'}), 429
+    if err == 'invalid':
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    return jsonify({
+        'token': token,
+        'username': username,
+        'expires_in': int(os.getenv('JWT_TTL_HOURS', '8')) * 3600
+    })
+
+
 @app.route('/api/upload-file', methods=['POST'])
+@require_auth
 def upload_file():
     """
     Upload file from React UI (supports PDF, CSV, XML, Images)
@@ -81,6 +123,7 @@ def upload_file():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/extract-invoice', methods=['POST'])
+@require_auth
 def extract_invoice():
     """
     Extract structured invoice data using production notebook logic
@@ -140,6 +183,7 @@ def extract_invoice():
         }), 500
 
 @app.route('/api/reconcile-invoice', methods=['POST'])
+@require_auth
 def reconcile_invoice():
     """
     Run complete invoice reconciliation workflow - Phase 2
@@ -154,7 +198,7 @@ def reconcile_invoice():
         if request.is_json and 'extracted_data' in request.json:
             # Use pre-extracted data
             extracted_data = request.json['extracted_data']
-            mapping_folder = request.json.get('mapping_folder', '../MediaBillingNotebook/mapping')
+            mapping_folder = request.json.get('mapping_folder', MAPPING_FOLDER)
             string_threshold = request.json.get('string_threshold', 0.8)
             number_tolerance = request.json.get('number_tolerance', 5.0)
             
@@ -200,7 +244,7 @@ def reconcile_invoice():
             vendor_score = None
             if vendor_name:
                 try:
-                    vendor_score_result = calculate_vendor_score(vendor_name, 'output')
+                    vendor_score_result = calculate_vendor_score(vendor_name, OUTPUT_FOLDER)
                     if 'vendor_scores' in vendor_score_result and vendor_score_result['vendor_scores']:
                         vendor_score = vendor_score_result['vendor_scores'][0]
                 except Exception as e:
@@ -231,10 +275,10 @@ def reconcile_invoice():
             if not Path(filepath).exists():
                 return jsonify({'error': f'File not found: {filepath}'}), 404
             
-            mapping_folder = request.json.get('mapping_folder', '../MediaBillingNotebook/mapping')
+            mapping_folder = request.json.get('mapping_folder', MAPPING_FOLDER)
             string_threshold = request.json.get('string_threshold', 0.8)
             number_tolerance = request.json.get('number_tolerance', 5.0)
-            
+
             results = run_invoice_reconciliation(
                 filepath,
                 mapping_folder,
@@ -259,6 +303,7 @@ def reconcile_invoice():
         }), 500
 
 @app.route('/api/vendor-scores', methods=['GET'])
+@require_auth
 def get_vendor_scores():
     """
     Calculate vendor performance scores based on historical discrepancy reports.
@@ -271,7 +316,7 @@ def get_vendor_scores():
         from services.invoice_reconciliation import calculate_vendor_score
         
         vendor_name = request.args.get('vendor_name')
-        output_folder = request.args.get('output_folder', 'output')
+        output_folder = request.args.get('output_folder', OUTPUT_FOLDER)
         
         # Calculate vendor scores
         results = calculate_vendor_score(vendor_name, output_folder)
@@ -289,6 +334,7 @@ def get_vendor_scores():
         }), 500
 
 @app.route('/api/analyze-discrepancy', methods=['POST'])
+@require_auth
 def analyze_discrepancy():
     """
     Analyze a single discrepancy using AI to provide reasoning and remediation plan.
@@ -323,6 +369,7 @@ def analyze_discrepancy():
         }), 500
 
 @app.route('/api/analyze-discrepancies-batch', methods=['POST'])
+@require_auth
 def analyze_discrepancies_batch():
     """
     Analyze multiple discrepancies using AI (batch processing).
@@ -521,9 +568,12 @@ def send_all_discrepancies_email():
         }), 500
 
 if __name__ == '__main__':
-    print("🚀 Starting iPhone 17 Campaign Generator API...")
-    print(f"📁 Upload folder: {UPLOAD_FOLDER}")
-    print("📄 Supported file types: PDF, CSV, Excel (.xlsx, .xls), XML, Images (JPG, PNG, GIF, BMP)")
-    print("✉️  Email endpoints available: /api/email/generate, /api/email/send")
-    print("🌐 Server running on http://localhost:5000")
-    app.run(debug=True, port=5000)
+    port = int(os.getenv('PORT', '5000'))
+    debug = os.getenv('FLASK_DEBUG', 'true').lower() == 'true'
+    print("Starting Media Billing Reconciliation API")
+    print(f"Upload folder: {UPLOAD_FOLDER}")
+    print(f"Mapping folder: {MAPPING_FOLDER}")
+    print(f"Output folder: {OUTPUT_FOLDER}")
+    print(f"Allowed origins: {ALLOWED_ORIGINS}")
+    print(f"Server running on http://0.0.0.0:{port}")
+    app.run(host='0.0.0.0', port=port, debug=debug)

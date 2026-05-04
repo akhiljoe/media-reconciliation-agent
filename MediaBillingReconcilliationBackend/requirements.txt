@@ -21,3 +21,6 @@ pytesseract==0.3.13
 
 # Utilities
 Werkzeug==3.0.1
+
+# Auth
+PyJWT==2.8.0
