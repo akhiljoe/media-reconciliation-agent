@@ -7,6 +7,10 @@ import DiscrepancyReview from './components/DiscrepancyReview'
 import DiscrepancyReport from './components/DiscrepancyReport'
 import Header from './components/Header'
 import Footer from './components/Footer'
+import { isAuthenticated } from './services/auth'
+
+const Protected = ({ children }: { children: JSX.Element }) =>
+  isAuthenticated() ? children : <Navigate to="/" replace />
 
 function App() {
   return (
@@ -16,37 +20,43 @@ function App() {
         <Route
           path="/extractor"
           element={
-            <div className="app">
-              <Header />
-              <main className="main-content">
-                <InvoiceExtractor />
-              </main>
-              <Footer />
-            </div>
+            <Protected>
+              <div className="app">
+                <Header />
+                <main className="main-content">
+                  <InvoiceExtractor />
+                </main>
+                <Footer />
+              </div>
+            </Protected>
           }
         />
         <Route
           path="/review"
           element={
-            <div className="app">
-              <Header />
-              <main className="main-content">
-                <DiscrepancyReview />
-              </main>
-              <Footer />
-            </div>
+            <Protected>
+              <div className="app">
+                <Header />
+                <main className="main-content">
+                  <DiscrepancyReview />
+                </main>
+                <Footer />
+              </div>
+            </Protected>
           }
         />
         <Route
           path="/report"
           element={
-            <div className="app">
-              <Header />
-              <main className="main-content">
-                <DiscrepancyReport />
-              </main>
-              <Footer />
-            </div>
+            <Protected>
+              <div className="app">
+                <Header />
+                <main className="main-content">
+                  <DiscrepancyReport />
+                </main>
+                <Footer />
+              </div>
+            </Protected>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

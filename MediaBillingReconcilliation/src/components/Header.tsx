@@ -1,8 +1,17 @@
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { logout, getUser } from '../services/auth';
 import './Header.css';
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+  const user = getUser();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <header className="header">
@@ -22,6 +31,16 @@ const Header = () => {
             <span className="theme-icon theme-icon-light">☀️</span>
             <span className="theme-icon theme-icon-dark">🌙</span>
           </button>
+          {user && (
+            <button
+              className="theme-toggle"
+              onClick={handleLogout}
+              title={`Logged in as ${user}. Click to sign out.`}
+              style={{ marginLeft: 8 }}
+            >
+              Logout
+            </button>
+          )}
         </div>
       </div>
     </header>
