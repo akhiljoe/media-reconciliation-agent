@@ -41,10 +41,13 @@ pytestdebug.log
 logs/
 
 # Runtime artifacts
-MediaBillingReconcilliationBackend/output/
-MediaBillingReconcilliationBackend/uploads/*
-!MediaBillingReconcilliationBackend/uploads/.gitkeep
+backend/output/
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/venv/
+backend/backend.log
 
 # Local test files at repo root
 /invoice.png
 /claude_next_steps.txt
+/prompt.txt

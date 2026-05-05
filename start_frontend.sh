@@ -7,7 +7,7 @@ echo "🎨 Starting Media Billing Reconcilliation Frontend..."
 echo ""
 
 # Navigate to React app
-cd MediaBillingReconcilliation
+cd frontend
 
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then

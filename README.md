@@ -11,9 +11,8 @@
 - [Architecture](#architecture)
 - [Repository Structure](#repository-structure)
 - [Components](#components)
-  - [1. MediaBillingNotebook](#1-mediabillingnotebook)
-  - [2. MediaBillingMobileApp](#2-mediabillingmobileapp)
-  - [3. MediaBillingReconciliation](#3-mediabillingreconciliation)
+  - [1. Frontend](#1-frontend)
+  - [2. Backend](#2-backend)
 - [Reconciliation Logic](#reconciliation-logic)
 - [Workflow](#workflow)
 - [Setup & Installation](#setup--installation)
@@ -34,7 +33,7 @@ This project introduces an **AI-driven reconciliation system** that:
 2. Standardizes invoice formats across vendors
 3. Reconciles them against expected campaign or billing data
 4. Generates detailed discrepancy reports
-5. Provides a mobile and web interface for review
+5. Provides a web interface for review
 
 ---
 
@@ -56,10 +55,11 @@ The cloud deploy intentionally narrows the surface for a free-tier demo. These d
 
 | Original | Deployed | Why |
 |---|---|---|
-| Mobile app (Expo) | Excluded | Out of scope for the web demo |
+| Mobile app (Expo) | Removed from repo | Out of scope for the web demo |
 | Email notifications (SMTP) | Routes removed from API | Avoids SMTP credential burden, reduces attack surface |
 | Login accepts any email/password | Real JWT auth against env-defined users | Demo runs publicly, needed a boundary |
-| Backend reads from `MediaBillingNotebook/mapping/` | Mapping JSONs bundled into backend image | Notebook folder is dev-only; container must be self contained |
+| `MediaBillingNotebook/` (Jupyter prototype + mapping JSONs) | Removed; mapping JSONs moved into `backend/mapping/` | Notebook was dev-only. Container must be self contained. |
+| Long folder names `MediaBillingReconcilliation/` and `MediaBillingReconcilliationBackend/` | Renamed to `frontend/` and `backend/` | Cleaner repo layout |
 | Vendor history persisted in `output/` CSVs | `output/` is `/tmp` inside container, lost on cold start | Project rule forbids persistent storage |
 | Always-on Flask `app.run(debug=True)` | Gunicorn 2 workers, 120 sec timeout | Production WSGI server |
 | CORS wildcard | CORS scoped to the Static Web App origin | Standard hardening |
@@ -72,7 +72,7 @@ The cloud deploy intentionally narrows the surface for a free-tier demo. These d
 - 5 failed login attempts triggers a 60 second per-username lockout.
 - All `/api/*` routes except `/api/health` and `/api/auth/login` require `Authorization: Bearer <jwt>`.
 
-See `MediaBillingReconcilliationBackend/README.md` for env var details and how to generate password hashes.
+See `backend/README.md` for env var details and how to generate password hashes.
 
 ---
 
@@ -102,14 +102,12 @@ See `MediaBillingReconcilliationBackend/README.md` for env var details and how t
              | Logic Engine       |
              +--------------------+
                        |
-          +------------+-------------+
-          |                          |
-          v                          v
- +----------------+         +--------------------+
- | Web Dashboard  |         | Mobile Application |
- | Reconciliation |         | Invoice Upload     |
- | Review         |         | & Reports          |
- +----------------+         +--------------------+
+                       v
+             +--------------------+
+             | Web Dashboard      |
+             | Reconciliation     |
+             | Review             |
+             +--------------------+
 ```
 
 ---
@@ -117,13 +115,15 @@ See `MediaBillingReconcilliationBackend/README.md` for env var details and how t
 ## 📁 Repository Structure
 
 ```
-media-reconciliation-agent/
+media-recon-azure/
 │
-├── MediaBillingMobileApp/        # Mobile app for invoice upload & reporting
+├── frontend/                   # React + Vite web dashboard
 │
-├── MediaBillingNotebook/         # AI agents and document extraction logic
+├── backend/                    # Flask API + JWT auth + Dockerfile
 │
-├── MediaBillingReconciliation/   # Web dashboard for reconciliation review
+├── deploy/                     # Azure deploy scripts
+│
+├── AZURE_DEPLOYMENT_PLAN.md    # Step by step Azure deploy guide
 │
 └── README.md
 ```
@@ -132,16 +132,50 @@ media-reconciliation-agent/
 
 ## 🧩 Components
 
-### 1. MediaBillingNotebook
+### 1. Frontend
 
-The AI extraction and data processing layer — demonstrates how **AI agents can parse and interpret unstructured media invoices**.
+A web-based interface to **review discrepancies and reconciliation results** in detail.
 
-#### ✨ Key Features
+#### ✨ Features
 
-- Multi-format document ingestion (PDF, Image, CSV)
-- AI-powered field extraction
-- Mapping vendor-specific invoice formats to a standardized schema
-- Agent-based processing pipeline
+- Login with JWT auth
+- Upload invoices (PDF, image, CSV, XLSX)
+- View extracted invoice data side-by-side
+- Compare expected vs. billed amounts
+- Drill into individual discrepancies
+- Generate and export reconciliation reports
+
+#### 🛠️ Tech Stack
+
+- React 18
+- TypeScript
+- Vite
+- React Router
+- Axios
+
+#### 🖥️ Key UI Components
+
+| Component | Purpose |
+|-----------|---------|
+| `Login` | JWT-backed authentication form |
+| `InvoiceExtractor` | Upload and extract invoice data |
+| `DiscrepancyReport` | High-level report of all flagged issues |
+| `DiscrepancyReview` | Detailed view for individual discrepancies |
+
+---
+
+### 2. Backend
+
+Flask API that handles invoice extraction, reconciliation, and AI-driven analysis.
+
+#### ✨ Features
+
+- Multi-format document ingestion (PDF, Image, CSV, XLSX, XML, HTML, TXT)
+- AI-powered field extraction via CrewAI
+- Vendor-specific invoice format mapping
+- Fuzzy reconciliation against bundled mapping JSONs
+- Trust score and vendor performance scoring
+- JWT auth with per-user rate limiting
 
 #### 🤖 AI Agents
 
@@ -151,22 +185,25 @@ The system uses a **multi-agent architecture** powered by CrewAI:
 |-------|---------------|
 | Data Extraction Agent | Parses raw invoice documents |
 | Invoice Normalization Agent | Maps vendor formats to standard schema |
-| Validation Agent | Checks data quality and completeness |
-| Reconciliation Preparation Agent | Prepares data for matching |
+| Discrepancy Analyst | Reasons over flagged differences |
+| Remediation Specialist | Suggests action plans |
 
-#### 🛠️ Technologies
+#### 🛠️ Tech Stack
 
-- Python
-- Jupyter Notebook
-- [CrewAI](https://www.crewai.com/)
-- OpenAI / LLM APIs
+- Python 3.11
+- Flask + Flask-CORS + Gunicorn
+- CrewAI
+- OpenAI
+- PyJWT
+- pdfplumber, pytesseract (OCR), pandas, openpyxl
+- Docker
 
 #### 🗂️ Invoice Mappings
 
-Invoice templates are standardized using JSON mappings:
+Vendor invoice templates are standardized using JSON mappings bundled inside `backend/mapping/`:
 
 ```
-mapping/
+backend/mapping/
 ├── media_invoice_1.json
 ├── media_invoice_2.json
 ├── media_invoice_3.json
@@ -174,73 +211,7 @@ mapping/
 └── media_invoice_5.json
 ```
 
-These mappings convert vendor-specific invoices into a **common schema** for downstream reconciliation.
-
----
-
-### 2. MediaBillingMobileApp
-
-A mobile application enabling field users to upload invoices, extract data, and view reconciliation reports on the go.
-
-#### ✨ Features
-
-- User login & authentication
-- Invoice upload and AI extraction interface
-- Reconciliation report viewer
-
-#### 🛠️ Tech Stack
-
-- React Native
-- TypeScript
-- Expo
-- REST API integration
-
-#### 📱 Screens
-
-```
-MediaBillingMobileApp/src/
-│
-├── navigation/
-│   └── AppNavigator.tsx
-│
-├── screens/
-│   ├── LoginScreen.tsx
-│   ├── InvoiceExtractorScreen.tsx
-│   └── ReconciliationReportScreen.tsx
-│
-├── services/
-│   └── api.ts
-│
-└── types/
-```
-
----
-
-### 3. MediaBillingReconciliation
-
-A web-based interface to **review discrepancies and reconciliation results** in detail.
-
-#### ✨ Features
-
-- View extracted invoice data side-by-side
-- Compare expected vs. billed amounts
-- Drill into individual discrepancies
-- Generate and export reconciliation reports
-
-#### 🛠️ Tech Stack
-
-- React
-- TypeScript
-- CSS
-- Vite
-
-#### 🖥️ Key UI Components
-
-| Component | Purpose |
-|-----------|---------|
-| `DiscrepancyReport` | High-level report of all flagged issues |
-| `DiscrepancyReview` | Detailed view for individual discrepancies |
-| `InvoiceComparison` | Side-by-side invoice vs. expected data view |
+These convert vendor-specific invoices into a **common schema** for downstream reconciliation.
 
 ---
 
@@ -269,7 +240,7 @@ The reconciliation engine compares invoice data against expected campaign data a
 
 ```
 Step 1 ── Upload Invoice
-           └─ Via mobile app or web interface
+           └─ Via web interface
 
 Step 2 ── AI Extraction
            └─ Agents extract: Vendor, Campaign, Invoice Amount,
@@ -293,7 +264,7 @@ Step 5 ── Discrepancy Report
 
 - Python 3.8+
 - Node.js 18+
-- npm / Expo CLI
+- npm
 
 ### Clone the Repository
 
@@ -304,22 +275,10 @@ cd media-reconciliation-agent
 
 ---
 
-### 🐍 Running the Notebook (AI Extraction Layer)
-
-```bash
-cd MediaBillingNotebook
-pip install -r requirements.txt
-jupyter notebook
-```
-
-Then open **`MediaBillingCrew.ipynb`** in the Jupyter interface.
-
----
-
 ### 🌐 Running the Web Dashboard
 
 ```bash
-cd MediaBillingReconcilliation
+cd frontend
 npm install
 npm run dev
 ```
@@ -331,7 +290,7 @@ Vite serves on **http://localhost:3000** (forced by `vite.config.ts`).
 ### 🔧 Running the Backend API
 
 ```bash
-cd MediaBillingReconcilliationBackend
+cd backend
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -357,19 +316,7 @@ AUTH_USERS={"akhil@demo.com": "scrypt:..."}
 JWT_SECRET=any-long-random-string
 ```
 
-Mapping JSONs are bundled in `MediaBillingReconcilliationBackend/mapping/`. The backend no longer reads from `MediaBillingNotebook/mapping/`.
-
----
-
-### 📱 Running the Mobile App
-
-```bash
-cd MediaBillingMobileApp
-npm install
-npm start
-```
-
-This will start the **Expo development server**. Scan the QR code with the Expo Go app on your device.
+Mapping JSONs are bundled in `backend/mapping/`.
 
 ---
 
@@ -421,3 +368,4 @@ Potential enhancements to scale this prototype into a production-grade tool:
 ---
 
 > *Built with ❤️ at a hackathon to modernize media billing operations using AI.*
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     

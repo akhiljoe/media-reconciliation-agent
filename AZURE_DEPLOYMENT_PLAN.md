@@ -4,7 +4,7 @@
 **Target**: Free tier Azure demo
 **Date written**: 2026-05-04
 **Author context**: Plan generated for Akhil Joe by Claude Cowork
-**Scope**: Web frontend plus Flask backend. Mobile app excluded.
+**Scope**: Web frontend plus Flask backend. Mobile app removed from repo.
 
 ## 0. Port Map (Important)
 
@@ -96,11 +96,11 @@ Both outputs go straight into Container App secrets. Never commit to git.
 ## 3. Files To Modify In Place
 
 > Note: As of the current commit, the following auth-related files are also modified or new. They are listed under section 4.x where relevant.
-> - Modified: `MediaBillingReconcilliation/src/main.tsx`, `Login.tsx`, `Header.tsx`, `App.tsx`
-> - Modified: `MediaBillingReconcilliationBackend/app.py` (added `/api/auth/login` plus `@require_auth` on protected routes), `requirements.txt` (added `PyJWT`)
-> - New: `MediaBillingReconcilliationBackend/services/auth.py`, `MediaBillingReconcilliation/src/services/auth.ts`
+> - Modified: `frontend/src/main.tsx`, `Login.tsx`, `Header.tsx`, `App.tsx`
+> - Modified: `backend/app.py` (added `/api/auth/login` plus `@require_auth` on protected routes), `requirements.txt` (added `PyJWT`)
+> - New: `backend/services/auth.py`, `frontend/src/services/auth.ts`
 
-### 3.1 `MediaBillingReconcilliation/src/services/campaignAPI.ts`
+### 3.1 `frontend/src/services/campaignAPI.ts`
 
 Change line 3 only.
 
@@ -116,7 +116,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000
 
 Local dev still works. Production picks up build time env var.
 
-### 3.2 `MediaBillingReconcilliationBackend/app.py`
+### 3.2 `backend/app.py`
 
 Multiple targeted edits. Keep all reconciliation logic untouched.
 
@@ -231,7 +231,7 @@ if __name__ == '__main__':
 
 Production uses gunicorn. This block only runs for local dev now.
 
-### 3.3 `MediaBillingReconcilliationBackend/requirements.txt`
+### 3.3 `backend/requirements.txt`
 
 Append one line at end:
 ```
@@ -244,7 +244,7 @@ Pin Python to 3.11 via Dockerfile. CrewAI 0.70 has known issues on 3.12.
 
 ## 4. Files To Create
 
-### 4.1 `MediaBillingReconcilliation/.env.production`
+### 4.1 `frontend/.env.production`
 
 Build time env var. Vite reads this during `npm run build`.
 
@@ -254,7 +254,7 @@ VITE_API_BASE_URL=https://PLACEHOLDER_BACKEND_URL/api
 
 Replace placeholder after backend deploys. See step 7.4.
 
-### 4.2 `MediaBillingReconcilliation/staticwebapp.config.json`
+### 4.2 `frontend/staticwebapp.config.json`
 
 SPA fallback so React Router routes work on refresh.
 
@@ -267,7 +267,7 @@ SPA fallback so React Router routes work on refresh.
 }
 ```
 
-### 4.3 `MediaBillingReconcilliationBackend/Dockerfile`
+### 4.3 `backend/Dockerfile`
 
 ```dockerfile
 FROM python:3.11-slim
@@ -296,7 +296,7 @@ CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT} --workers 2 --timeout 120 app:
 
 Notes. Container port matches local dev port. Workers set to 2. Timeout 120 sec for slow CrewAI calls. Poppler installed for PDF text fallback.
 
-### 4.4 `MediaBillingReconcilliationBackend/.dockerignore`
+### 4.4 `backend/.dockerignore`
 
 ```
 __pycache__
@@ -317,16 +317,16 @@ backend.log
 
 Stops local venv and secrets from entering image.
 
-### 4.5 `MediaBillingReconcilliationBackend/mapping/`
+### 4.5 `backend/mapping/`
 
-Copy these five files from `MediaBillingNotebook/mapping/`:
+Five vendor invoice mapping JSONs bundled with the backend (originally lived in the now-deleted Jupyter notebook folder):
 - `media_invoice_1.json`
 - `media_invoice_2.json`
 - `media_invoice_3.json`
 - `media_invoice_4.json`
 - `media_invoice_5.json`
 
-Mapping data must travel with the container.
+Mapping data must travel with the container. Already in place.
 
 ### 4.6 `deploy/00-prereqs.md`
 
@@ -388,7 +388,7 @@ RG_NAME="media-recon-rg"
 LOCATION="centralindia"
 ENV_NAME="media-recon-env"
 APP_NAME="media-recon-backend"
-BACKEND_DIR="../MediaBillingReconcilliationBackend"
+BACKEND_DIR="../backend"
 
 echo "Deploying backend container app"
 
@@ -414,7 +414,7 @@ echo "Save this. You need it for frontend env var."
 ```
 
 What this does. Step by step.
-1. Uploads the `MediaBillingReconcilliationBackend` folder to a managed cloud builder.
+1. Uploads the `backend` folder to a managed cloud builder.
 2. Builds the Dockerfile in the cloud.
 3. Stores the image in a managed registry Microsoft hosts. Free for this flow.
 4. Creates Container Apps Environment `media-recon-env` if missing.
@@ -501,7 +501,7 @@ set -e
 RG_NAME="media-recon-rg"
 SWA_NAME="media-recon-frontend"
 LOCATION="centralindia"
-FRONTEND_DIR="../MediaBillingReconcilliation"
+FRONTEND_DIR="../frontend"
 
 if [ -z "$BACKEND_URL" ]; then
   echo "ERROR: export BACKEND_URL first (https://<fqdn>)"
@@ -691,7 +691,7 @@ If costs ever appear, check Cost Management in portal first.
 
 **CORS chicken-and-egg.** Backend deploys first without knowing frontend URL. Frontend deploys next. Then re-run `03-set-secrets.sh` with the real frontend URL. Step 6 in the table above.
 
-**Mapping path inside container.** Lives at `/app/mapping`. Set via `MAPPING_FOLDER` env var. Frontend default still references `'../MediaBillingNotebook/mapping'` which gets ignored because the backend route reads its own default when JSON omits the field. Safer pattern. Frontend should stop sending `mapping_folder` at all. Optional cleanup.
+**Mapping path inside container.** Lives at `/app/mapping`. Set via `MAPPING_FOLDER` env var. Frontend no longer sends `mapping_folder` so backend default wins.
 
 **Vendor scoring history.** Lost on every cold start. Acceptable per project rules.
 
@@ -718,14 +718,14 @@ Code still runs locally with same commands. Both branches of the env-var pattern
 
 Frontend.
 ```bash
-cd MediaBillingReconcilliation
+cd frontend
 npm run dev
 ```
 Opens on **http://localhost:3000** (forced by `vite.config.ts`). Not 5173.
 
 Backend.
 ```bash
-cd MediaBillingReconcilliationBackend
+cd backend
 source ../venv/bin/activate
 python app.py
 ```
@@ -767,7 +767,7 @@ Listed for transparency.
 - **No custom domain.** Default Azure domains used.
 - **No Application Insights.** Log Analytics auto-attached is enough for demo.
 - **No staging slot.** Container Apps revisions handle blue/green if needed.
-- **Mobile app deployment.** Excluded per project rules.
+- **Mobile app deployment.** Mobile app removed from repo entirely.
 
 ---
 
@@ -817,7 +817,3 @@ None blocking. Listed if scope expands.
 - Add Application Insights when traffic grows.
 - Custom domain when going public.
 - Restore email feature when SMTP credentials available.
-
----
-
-End of plan.

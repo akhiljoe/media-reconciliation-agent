@@ -11,7 +11,7 @@ APP_NAME="${APP_NAME:-media-recon-backend}"
 
 # Resolve backend dir relative to this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKEND_DIR="$SCRIPT_DIR/../MediaBillingReconcilliationBackend"
+BACKEND_DIR="$SCRIPT_DIR/../backend"
 
 if [ ! -f "$BACKEND_DIR/Dockerfile" ]; then
   echo "ERROR: Dockerfile not found at $BACKEND_DIR/Dockerfile"

@@ -12,7 +12,7 @@ SWA_NAME="${SWA_NAME:-media-recon-frontend}"
 : "${BACKEND_URL:?export BACKEND_URL first - the https://<fqdn> from step 02}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FRONTEND_DIR="$SCRIPT_DIR/../MediaBillingReconcilliation"
+FRONTEND_DIR="$SCRIPT_DIR/../frontend"
 
 if [ ! -f "$FRONTEND_DIR/package.json" ]; then
   echo "ERROR: package.json not found at $FRONTEND_DIR"

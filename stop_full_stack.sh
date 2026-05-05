@@ -46,7 +46,7 @@ fi
 read -p "🗑️  Remove log files? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    rm -f "$SCRIPT_DIR/MediaBillingReconcilliationBackend/backend.log"
-    rm -f "$SCRIPT_DIR/MediaBillingReconcilliation/frontend.log"
+    rm -f "$SCRIPT_DIR/backend/backend.log"
+    rm -f "$SCRIPT_DIR/frontend/frontend.log"
     echo "✅ Log files removed"
 fi

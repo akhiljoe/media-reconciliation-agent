@@ -31,18 +31,18 @@ if ! command -v node &> /dev/null; then
 fi
 
 # Check for .env file
-if [ ! -f "$SCRIPT_DIR/MediaBillingReconcilliationBackend/.env" ]; then
+if [ ! -f "$SCRIPT_DIR/backend/.env" ]; then
     echo "⚠️  No .env file found in backend directory"
     echo "Creating .env file. Please add your OPENAI_API_KEY..."
-    echo "OPENAI_API_KEY=sk-your-key-here" > "$SCRIPT_DIR/MediaBillingReconcilliationBackend/.env"
-    echo "📝 Created .env file at: MediaBillingReconcilliationBackend/.env"
+    echo "OPENAI_API_KEY=sk-your-key-here" > "$SCRIPT_DIR/backend/.env"
+    echo "📝 Created .env file at: backend/.env"
     echo "Please edit it and add your OpenAI API key, then run this script again."
     exit 1
 fi
 
 # Check if OPENAI_API_KEY is set
-if grep -q "sk-your-key-here" "$SCRIPT_DIR/MediaBillingReconcilliationBackend/.env"; then
-    echo "⚠️  Please update OPENAI_API_KEY in MediaBillingReconcilliationBackend/.env"
+if grep -q "sk-your-key-here" "$SCRIPT_DIR/backend/.env"; then
+    echo "⚠️  Please update OPENAI_API_KEY in backend/.env"
     exit 1
 fi
 
@@ -51,7 +51,7 @@ echo ""
 
 # Start backend in background
 echo "🔧 Starting Flask Backend..."
-cd "$SCRIPT_DIR/MediaBillingReconcilliationBackend"
+cd "$SCRIPT_DIR/backend"
 
 # Install backend dependencies if needed
 if [ ! -d "../venv" ]; then
@@ -82,7 +82,7 @@ sleep 3
 # Start frontend in background
 echo ""
 echo "🎨 Starting React Frontend..."
-cd "$SCRIPT_DIR/MediaBillingReconcilliation"
+cd "$SCRIPT_DIR/frontend"
 
 # Install frontend dependencies if needed
 if [ ! -d "node_modules" ]; then
@@ -108,8 +108,8 @@ echo "   - Backend PID:  $BACKEND_PID"
 echo "   - Frontend PID: $FRONTEND_PID"
 echo ""
 echo "📝 Logs:"
-echo "   - Backend:  MediaBillingReconcilliationBackend/backend.log"
-echo "   - Frontend: MediaBillingReconcilliation/frontend.log"
+echo "   - Backend:  backend/backend.log"
+echo "   - Frontend: frontend/frontend.log"
 echo ""
 echo "🛑 To stop servers:"
 echo "   kill $BACKEND_PID $FRONTEND_PID"

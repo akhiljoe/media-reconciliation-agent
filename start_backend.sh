@@ -7,7 +7,7 @@ echo "🚀 Starting Media Billing Reconcilliation Backend..."
 echo ""
 
 # Navigate to backend directory
-cd MediaBillingReconcilliationBackend
+cd backend
 
 # Check if virtual environment exists
 if [ ! -d "../venv" ]; then
