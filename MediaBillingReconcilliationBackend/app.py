@@ -404,7 +404,7 @@ def analyze_discrepancies_batch():
             'analyzed_count': len(results),
             'results': results
         })
-    
+
     except Exception as e:
         import traceback
         return jsonify({
@@ -413,159 +413,9 @@ def analyze_discrepancies_batch():
             'traceback': traceback.format_exc()
         }), 500
 
-@app.route('/api/email/generate', methods=['POST'])
-def generate_discrepancy_email():
-    """
-    Generate email notification for discrepancies (preview mode).
-    Body:
-        - discrepancies: List of discrepancy records
-        - invoice_context: Invoice metadata (vendor_name, invoice_number, etc.)
-        - recipient_info: Dict with email, name, company, role
-    Returns: Generated email with subject and HTML body for preview
-    """
-    try:
-        from services.email_service import send_discrepancy_email
-        
-        if not request.is_json:
-            return jsonify({'error': 'Request must be JSON'}), 400
-        
-        discrepancies = request.json.get('discrepancies', [])
-        invoice_context = request.json.get('invoice_context', {})
-        recipient_info = request.json.get('recipient_info', {})
-        
-        if not discrepancies:
-            return jsonify({'error': 'discrepancies list required'}), 400
-        
-        # Generate email in preview mode
-        result = send_discrepancy_email(
-            discrepancies=discrepancies,
-            invoice_context=invoice_context,
-            recipient_info=recipient_info,
-            send_mode='preview'
-        )
-        
-        return jsonify(result)
-    
-    except Exception as e:
-        import traceback
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
 
-@app.route('/api/email/send', methods=['POST'])
-def send_discrepancy_email_smtp():
-    """
-    Send email notification for discrepancies via SMTP.
-    Body:
-        - discrepancies: List of discrepancy records
-        - invoice_context: Invoice metadata
-        - recipient_info: Dict with email (required), name, company, role, cc_emails
-        - attachments: Optional list of file paths to attach
-        - smtp_config: Optional SMTP configuration (overrides env vars)
-    Returns: Email send status and delivery confirmation
-    """
-    try:
-        from services.email_service import send_discrepancy_email
-        
-        if not request.is_json:
-            return jsonify({'error': 'Request must be JSON'}), 400
-        
-        discrepancies = request.json.get('discrepancies', [])
-        invoice_context = request.json.get('invoice_context', {})
-        recipient_info = request.json.get('recipient_info', {})
-        attachments = request.json.get('attachments', [])
-        smtp_config = request.json.get('smtp_config')
-        
-        if not discrepancies:
-            return jsonify({'error': 'discrepancies list required'}), 400
-        
-        if not recipient_info.get('email'):
-            return jsonify({'error': 'recipient email address required'}), 400
-        
-        # Send email via SMTP
-        result = send_discrepancy_email(
-            discrepancies=discrepancies,
-            invoice_context=invoice_context,
-            recipient_info=recipient_info,
-            send_mode='send',
-            attachments=attachments,
-            smtp_config=smtp_config
-        )
-        
-        return jsonify(result)
-    
-    except Exception as e:
-        import traceback
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
-
-@app.route('/api/email/send-all-discrepancies', methods=['POST'])
-def send_all_discrepancies_email():
-    """
-    Generate and send email for all discrepancies from a reconciliation report.
-    Convenient endpoint that combines reconciliation results with email sending.
-    Body:
-        - report_path: Path to CSV report (optional if discrepancies provided)
-        - discrepancies: List of discrepancy records (optional if report_path provided)
-        - invoice_context: Invoice metadata
-        - recipient_info: Recipient details with email
-        - send_mode: 'preview' or 'send' (default: preview)
-        - attach_report: Boolean to attach CSV report (default: true)
-    Returns: Email generation/send result
-    """
-    try:
-        import pandas as pd
-        from services.email_service import send_discrepancy_email
-        
-        if not request.is_json:
-            return jsonify({'error': 'Request must be JSON'}), 400
-        
-        report_path = request.json.get('report_path')
-        discrepancies = request.json.get('discrepancies', [])
-        invoice_context = request.json.get('invoice_context', {})
-        recipient_info = request.json.get('recipient_info', {})
-        send_mode = request.json.get('send_mode', 'preview')
-        attach_report = request.json.get('attach_report', True)
-        
-        # Load discrepancies from CSV if path provided
-        if report_path and not discrepancies:
-            if not Path(report_path).exists():
-                return jsonify({'error': f'Report file not found: {report_path}'}), 404
-            
-            df = pd.read_csv(report_path)
-            discrepancies = df.to_dict('records')
-        
-        if not discrepancies:
-            return jsonify({'error': 'No discrepancies found to send'}), 400
-        
-        # Prepare attachments
-        attachments = []
-        if attach_report and report_path and Path(report_path).exists():
-            attachments.append(report_path)
-        
-        # Send email
-        result = send_discrepancy_email(
-            discrepancies=discrepancies,
-            invoice_context=invoice_context,
-            recipient_info=recipient_info,
-            send_mode=send_mode,
-            attachments=attachments
-        )
-        
-        return jsonify(result)
-    
-    except Exception as e:
-        import traceback
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
+# Email routes intentionally removed for the demo deploy.
+# See services/email_service.py if you want to reintroduce them later.
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', '5000'))
