@@ -1,0 +1,43 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtualenvs
+venv
+.venv
+env
+
+# Secrets and env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+backend.log
+logs
+
+# Local runtime data (containers use /tmp)
+uploads/*
+!uploads/.gitkeep
+output
+
+# Editor and OS
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+
+# Test and coverage
+.pytest_cache
+.coverage
+htmlcov
+.mypy_cache
+.tox
+
+# Misc
+*.egg-info
+.eggs

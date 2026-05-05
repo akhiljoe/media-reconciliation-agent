@@ -39,3 +39,12 @@ coverage.xml
 pytestdebug.log
 *.log
 logs/
+
+# Runtime artifacts
+MediaBillingReconcilliationBackend/output/
+MediaBillingReconcilliationBackend/uploads/*
+!MediaBillingReconcilliationBackend/uploads/.gitkeep
+
+# Local test files at repo root
+/invoice.png
+/claude_next_steps.txt

@@ -26,6 +26,7 @@ The `start_frontend.sh` script has a misleading comment saying port 5173. Ignore
 | Container build | `az containerapp up --source .` | No paid registry needed. |
 | Region | Central India | User location. |
 | Secret store | Container Apps secrets | Free. Two minute setup. |
+| Auth | JWT against env-defined users | Real boundary. No third party login flow. |
 | Email feature | Removed for demo | Reduces attack surface. |
 | Vendor scoring history | Ephemeral `/tmp/output` | Resets per cold start. |
 | Uptime mode | Scale to zero | First request slow. Free. |
@@ -40,22 +41,64 @@ The `start_frontend.sh` script has a misleading comment saying port 5173. Ignore
 ```
 Browser
   |
+  | 1. POST /api/auth/login (username + password)
+  | 2. Receive JWT, store in sessionStorage
+  | 3. Subsequent calls include Authorization: Bearer <jwt>
   v
 Azure Static Web Apps  (React + Vite build)
   |
   | HTTPS calls VITE_API_BASE_URL
   v
-Azure Container Apps   (Flask + gunicorn + tesseract)
+Azure Container Apps   (Flask + gunicorn + tesseract + JWT auth)
   |
   v
 OpenAI API             (via secret env var)
 ```
 
-No database. No blob storage. No queue. Mapping JSON files baked into container image. Uploads written to `/tmp` inside container.
+No database. No blob storage. No queue. Mapping JSON files baked into container image. Uploads written to `/tmp` inside container. User store is a JSON env var.
+
+---
+
+## 2.5 Auth Model
+
+JWT (HS256) signed by `JWT_SECRET`. Token TTL is `JWT_TTL_HOURS` (default 8).
+
+User store lives in env var `AUTH_USERS` as JSON: `{"email1": "<werkzeug-hash>", "email2": "<werkzeug-hash>"}`.
+
+Routes:
+- `/api/health` and `/api/auth/login` are public.
+- All other `/api/*` routes require `Authorization: Bearer <jwt>`. Returns 401 otherwise.
+
+Rate limit: 5 failed attempts per username triggers 60 second lockout. In-memory per replica. Container App is min=0 max=1 so single replica is the norm.
+
+Client side: token stored in `sessionStorage` (cleared on tab close). Axios interceptor injects header on every request. 401 response auto-redirects to login.
+
+**Generating password hashes** (one liner, run in your venv):
+
+```bash
+python -c "from werkzeug.security import generate_password_hash; import json; \
+users={'akhil@demo.com': generate_password_hash('CHANGE_ME_1'), \
+       'reviewer@demo.com': generate_password_hash('CHANGE_ME_2'), \
+       'guest@demo.com': generate_password_hash('CHANGE_ME_3')}; \
+print(json.dumps(users))"
+```
+
+**Generating a JWT secret**:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Both outputs go straight into Container App secrets. Never commit to git.
 
 ---
 
 ## 3. Files To Modify In Place
+
+> Note: As of the current commit, the following auth-related files are also modified or new. They are listed under section 4.x where relevant.
+> - Modified: `MediaBillingReconcilliation/src/main.tsx`, `Login.tsx`, `Header.tsx`, `App.tsx`
+> - Modified: `MediaBillingReconcilliationBackend/app.py` (added `/api/auth/login` plus `@require_auth` on protected routes), `requirements.txt` (added `PyJWT`)
+> - New: `MediaBillingReconcilliationBackend/services/auth.py`, `MediaBillingReconcilliation/src/services/auth.ts`
 
 ### 3.1 `MediaBillingReconcilliation/src/services/campaignAPI.ts`
 
@@ -391,21 +434,26 @@ set -e
 RG_NAME="media-recon-rg"
 APP_NAME="media-recon-backend"
 
-if [ -z "$OPENAI_API_KEY" ]; then
-  echo "ERROR: export OPENAI_API_KEY first"
-  exit 1
-fi
+# Required
+: "${OPENAI_API_KEY:?export OPENAI_API_KEY first}"
+: "${JWT_SECRET:?export JWT_SECRET first (use: python -c 'import secrets; print(secrets.token_urlsafe(48))')}"
+: "${AUTH_USERS:?export AUTH_USERS first (JSON map of email to werkzeug hash)}"
 
+# Optional
+JWT_TTL_HOURS="${JWT_TTL_HOURS:-8}"
 if [ -z "$FRONTEND_URL" ]; then
   echo "WARN: FRONTEND_URL not set. CORS will reject browser calls."
   FRONTEND_URL="http://localhost:3000"
 fi
 
-echo "Setting secret openai-key"
+echo "Setting secrets"
 az containerapp secret set \
   --name "$APP_NAME" \
   --resource-group "$RG_NAME" \
-  --secrets "openai-key=$OPENAI_API_KEY"
+  --secrets \
+    "openai-key=$OPENAI_API_KEY" \
+    "jwt-secret=$JWT_SECRET" \
+    "auth-users=$AUTH_USERS"
 
 echo "Updating env vars"
 az containerapp update \
@@ -413,6 +461,9 @@ az containerapp update \
   --resource-group "$RG_NAME" \
   --set-env-vars \
     "OPENAI_API_KEY=secretref:openai-key" \
+    "JWT_SECRET=secretref:jwt-secret" \
+    "AUTH_USERS=secretref:auth-users" \
+    "JWT_TTL_HOURS=$JWT_TTL_HOURS" \
     "ALLOWED_ORIGINS=$FRONTEND_URL" \
     "MAPPING_FOLDER=/app/mapping" \
     "UPLOAD_FOLDER=/tmp/uploads" \
@@ -425,6 +476,8 @@ How to run.
 
 ```bash
 export OPENAI_API_KEY="sk-proj-..."
+export JWT_SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+export AUTH_USERS='{"akhil@demo.com":"<hash>","reviewer@demo.com":"<hash>","guest@demo.com":"<hash>"}'
 export FRONTEND_URL="https://<your-static-web-app>.azurestaticapps.net"
 ./03-set-secrets.sh
 ```
@@ -432,12 +485,12 @@ export FRONTEND_URL="https://<your-static-web-app>.azurestaticapps.net"
 Run this twice. First time after step 02 with placeholder FRONTEND_URL. Second time after step 04 once you know the real Static Web Apps URL.
 
 What this does.
-1. Stores `OPENAI_API_KEY` as a Container App secret. Encrypted at rest.
-2. Mounts the secret as an env var `OPENAI_API_KEY` inside the container.
-3. Sets `ALLOWED_ORIGINS` so CORS allows your frontend domain only.
-4. Sets folder paths for uploads, output, mapping.
+1. Stores three secrets: `openai-key`, `jwt-secret`, `auth-users`. Encrypted at rest.
+2. Mounts them as env vars inside the container via `secretref:`.
+3. Sets `JWT_TTL_HOURS`, `ALLOWED_ORIGINS`, and folder paths as plain env vars.
+4. Restart triggers automatically after env update.
 
-Verify in portal. Container App. Settings. Secrets. Should show `openai-key`. Settings. Containers. Edit. Env vars listed.
+Verify in portal. Container App. Settings. Secrets. Should show `openai-key`, `jwt-secret`, `auth-users`. Settings. Containers. Edit. Env vars listed including the three secretref entries.
 
 ### 4.10 `deploy/04-deploy-frontend.sh`
 
@@ -527,24 +580,44 @@ if [ -z "$BACKEND_URL" ] || [ -z "$FRONTEND_URL" ]; then
   exit 1
 fi
 
-echo "Test 1: backend health"
+echo "Test 1: backend health (public)"
 curl -sS "$BACKEND_URL/api/health"
 echo ""
 
-echo "Test 2: backend CORS preflight"
+echo "Test 2: protected route rejects without token"
+STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BACKEND_URL/api/upload-file")
+if [ "$STATUS" = "401" ]; then
+  echo "OK: got 401 as expected"
+else
+  echo "FAIL: expected 401, got $STATUS"
+fi
+
+echo ""
+echo "Test 3: backend CORS preflight"
 curl -sS -X OPTIONS "$BACKEND_URL/api/health" \
   -H "Origin: $FRONTEND_URL" \
   -H "Access-Control-Request-Method: GET" \
   -i | grep -i "access-control"
 
 echo ""
-echo "Test 3: frontend reachable"
+echo "Test 4: login returns a token"
+if [ -n "$DEMO_USER" ] && [ -n "$DEMO_PASS" ]; then
+  curl -sS -X POST "$BACKEND_URL/api/auth/login" \
+    -H "Content-Type: application/json" \
+    -d "{\"username\":\"$DEMO_USER\",\"password\":\"$DEMO_PASS\"}"
+  echo ""
+else
+  echo "SKIP: export DEMO_USER and DEMO_PASS to run this check"
+fi
+
+echo ""
+echo "Test 5: frontend reachable"
 curl -sS -o /dev/null -w "%{http_code}\n" "$FRONTEND_URL"
 
-echo "Done. Now open $FRONTEND_URL in browser and try a real upload."
+echo "Done. Now open $FRONTEND_URL in browser and try a real login + upload."
 ```
 
-What this does. Three smoke tests. Health endpoint, CORS headers, frontend HTTP 200.
+What this does. Five smoke tests. Public health, protected-route rejection, CORS headers, login token, frontend HTTP 200.
 
 ### 4.12 `deploy/99-teardown.sh`
 
@@ -605,6 +678,12 @@ If costs ever appear, check Cost Management in portal first.
 ## 7. Things To Watch Out For
 
 **OpenAI key.** Never commit it. The repo `.env` previously held a key. Rotate if uncertain.
+
+**JWT secret.** If you change `JWT_SECRET` after deploy, all existing tokens become invalid. Users must log in again. Acceptable for a demo.
+
+**AUTH_USERS as env var.** Container Apps secret values are limited to 65 KB. Three users with werkzeug hashes is well under. If user count grows past dozens, switch to a managed identity store.
+
+**Lockout state is per replica.** With min=0 max=1 there is only one replica so this is fine. If you ever raise max replicas, lockout resets across instances and a brute force attacker could rotate.
 
 **Cold starts.** First request after 5 to 10 min idle takes 10 to 20 sec. Acceptable for demo. Hit `/api/health` 30 sec before showing the demo.
 
