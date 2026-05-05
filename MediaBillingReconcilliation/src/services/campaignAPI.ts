@@ -53,6 +53,8 @@ export const extractInvoice = async (file: File, maxRows: number = 50): Promise<
 };
 
 // Reconcile invoice data with mapping files - Phase 2
+// mapping_folder omitted on purpose. Backend resolves it from the
+// MAPPING_FOLDER env var (defaults to its own local mapping/ dir).
 export const reconcileInvoice = async (
   extractedData: any,
   options?: {
@@ -61,13 +63,15 @@ export const reconcileInvoice = async (
     number_tolerance?: number;
   }
 ): Promise<any> => {
-  const response = await axios.post(`${API_BASE_URL}/reconcile-invoice`, {
+  const body: Record<string, any> = {
     extracted_data: extractedData,
-    mapping_folder: options?.mapping_folder || '../MediaBillingNotebook/mapping',
-    string_threshold: options?.string_threshold || 0.8,
-    number_tolerance: options?.number_tolerance || 5,
-  });
-
+    string_threshold: options?.string_threshold ?? 0.8,
+    number_tolerance: options?.number_tolerance ?? 5,
+  };
+  if (options?.mapping_folder) {
+    body.mapping_folder = options.mapping_folder;
+  }
+  const response = await axios.post(`${API_BASE_URL}/reconcile-invoice`, body);
   return response.data;
 };
 

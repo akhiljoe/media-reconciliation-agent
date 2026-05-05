@@ -108,7 +108,6 @@ const InvoiceExtractor: React.FC = () => {
 
     try {
       const result = await reconcileInvoice(extractionResult.invoice_data, {
-        mapping_folder: '../MediaBillingNotebook/mapping',
         string_threshold: 0.8,
         number_tolerance: 5
       });
