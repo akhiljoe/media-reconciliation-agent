@@ -7,6 +7,7 @@
 ## 📌 Table of Contents
 
 - [Overview](#overview)
+- [Cloud Deployment](#cloud-deployment)
 - [Architecture](#architecture)
 - [Repository Structure](#repository-structure)
 - [Components](#components)
@@ -34,6 +35,44 @@ This project introduces an **AI-driven reconciliation system** that:
 3. Reconciles them against expected campaign or billing data
 4. Generates detailed discrepancy reports
 5. Provides a mobile and web interface for review
+
+---
+
+## ☁️ Cloud Deployment
+
+The web stack runs on Azure free tier. Full step by step plan and CLI scripts live in [`AZURE_DEPLOYMENT_PLAN.md`](./AZURE_DEPLOYMENT_PLAN.md) and [`deploy/`](./deploy/).
+
+**Stack:**
+
+| Layer | Hosting | SKU |
+|---|---|---|
+| Frontend | Azure Static Web Apps | Free |
+| Backend | Azure Container Apps (Consumption, scale to zero) | Free quota |
+| Secrets | Container Apps secrets | Free |
+
+### Deviations from the original architecture
+
+The cloud deploy intentionally narrows the surface for a free-tier demo. These differences are **deliberate**, not bugs.
+
+| Original | Deployed | Why |
+|---|---|---|
+| Mobile app (Expo) | Excluded | Out of scope for the web demo |
+| Email notifications (SMTP) | Routes removed from API | Avoids SMTP credential burden, reduces attack surface |
+| Login accepts any email/password | Real JWT auth against env-defined users | Demo runs publicly, needed a boundary |
+| Backend reads from `MediaBillingNotebook/mapping/` | Mapping JSONs bundled into backend image | Notebook folder is dev-only; container must be self contained |
+| Vendor history persisted in `output/` CSVs | `output/` is `/tmp` inside container, lost on cold start | Project rule forbids persistent storage |
+| Always-on Flask `app.run(debug=True)` | Gunicorn 2 workers, 120 sec timeout | Production WSGI server |
+| CORS wildcard | CORS scoped to the Static Web App origin | Standard hardening |
+
+### Auth in the deployed build
+
+- Login endpoint: `POST /api/auth/login` returns a JWT.
+- Demo users are stored as `AUTH_USERS` env var (JSON map of email to werkzeug hash).
+- Token TTL: 8 hours by default (`JWT_TTL_HOURS`).
+- 5 failed login attempts triggers a 60 second per-username lockout.
+- All `/api/*` routes except `/api/health` and `/api/auth/login` require `Authorization: Bearer <jwt>`.
+
+See `MediaBillingReconcilliationBackend/README.md` for env var details and how to generate password hashes.
 
 ---
 
@@ -280,10 +319,45 @@ Then open **`MediaBillingCrew.ipynb`** in the Jupyter interface.
 ### 🌐 Running the Web Dashboard
 
 ```bash
-cd MediaBillingReconciliation
+cd MediaBillingReconcilliation
 npm install
 npm run dev
 ```
+
+Vite serves on **http://localhost:3000** (forced by `vite.config.ts`).
+
+> Note: the `start_frontend.sh` script comment incorrectly says port 5173. The actual port is 3000.
+
+### 🔧 Running the Backend API
+
+```bash
+cd MediaBillingReconcilliationBackend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Configure .env with required vars (see backend README)
+# Required: OPENAI_API_KEY, JWT_SECRET, AUTH_USERS
+
+python app.py
+```
+
+Backend listens on **http://localhost:5000**.
+
+Login uses real auth now. Generate a password hash:
+
+```bash
+python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('your-password'))"
+```
+
+Add to `.env`:
+
+```
+AUTH_USERS={"akhil@demo.com": "scrypt:..."}
+JWT_SECRET=any-long-random-string
+```
+
+Mapping JSONs are bundled in `MediaBillingReconcilliationBackend/mapping/`. The backend no longer reads from `MediaBillingNotebook/mapping/`.
 
 ---
 
