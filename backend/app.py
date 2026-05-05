@@ -1,6 +1,8 @@
 """
-Flask API Server for iPhone 17 Campaign Generator
-Bridges React UI with Jupyter Notebook CrewAI agents
+Flask API Server for Media Billing Reconciliation.
+
+Handles invoice extraction, fuzzy reconciliation against vendor mapping JSONs,
+JWT-based auth, and AI-driven discrepancy analysis via CrewAI.
 """
 
 from flask import Flask, request, jsonify
