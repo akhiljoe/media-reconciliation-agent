@@ -6,6 +6,9 @@ set -e
 
 RG_NAME="${RG_NAME:-media-recon-rg}"
 LOCATION="${LOCATION:-centralindia}"
+# Static Web Apps is not available in every region. Valid: westus2, centralus,
+# eastus2, westeurope, eastasia. Default to eastasia for India proximity.
+SWA_LOCATION="${SWA_LOCATION:-eastasia}"
 SWA_NAME="${SWA_NAME:-media-recon-frontend}"
 
 # Required
@@ -31,12 +34,12 @@ npm run build
 popd > /dev/null
 
 echo ""
-echo "Creating Static Web App: $SWA_NAME"
-# SKU Free. No location needed for the SWA resource itself, but az requires it.
+echo "Creating Static Web App: $SWA_NAME (location: $SWA_LOCATION)"
+# SWA runs in a limited set of regions only. SWA_LOCATION above.
 az staticwebapp create \
   --name "$SWA_NAME" \
   --resource-group "$RG_NAME" \
-  --location "$LOCATION" \
+  --location "$SWA_LOCATION" \
   --sku Free \
   --output none || echo "(SWA may already exist; continuing)"
 
