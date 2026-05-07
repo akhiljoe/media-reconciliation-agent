@@ -51,3 +51,6 @@ backend/backend.log
 /invoice.png
 /claude_next_steps.txt
 /prompt.txt
+
+# Template config (contains GHCR user, may have other tweaks)
+deploy-template/config.sh
