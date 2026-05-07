@@ -2,15 +2,55 @@
 # Sets Container App secrets and env vars.
 # Run twice. Once after 02 with placeholder FRONTEND_URL.
 # Then again after 04 with the real Static Web App URL.
+#
+# Reads OPENAI_API_KEY, JWT_SECRET, AUTH_USERS, JWT_TTL_HOURS from backend/.env
+# unless those vars are already exported in the shell. Shell wins on conflicts.
 set -e
 
 RG_NAME="${RG_NAME:-media-recon-rg}"
 APP_NAME="${APP_NAME:-media-recon-backend}"
 
-# Required env vars
-: "${OPENAI_API_KEY:?export OPENAI_API_KEY first}"
-: "${JWT_SECRET:?export JWT_SECRET first - use: python -c 'import secrets; print(secrets.token_urlsafe(48))'}"
-: "${AUTH_USERS:?export AUTH_USERS first as JSON map of email to werkzeug hash}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/../backend/.env"
+
+# Auto-load from backend/.env (only sets vars that aren't already in the shell)
+if [ -f "$ENV_FILE" ]; then
+  echo "Loading missing values from $ENV_FILE"
+  while IFS= read -r line || [ -n "$line" ]; do
+    # Skip comments and blank lines
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ -z "${line//[[:space:]]/}" ]] && continue
+
+    # Strip trailing carriage return (Windows line endings)
+    line="${line%$'\r'}"
+
+    if [[ "$line" == *"="* ]]; then
+      key="${line%%=*}"
+      key="${key//[[:space:]]/}"
+      value="${line#*=}"
+
+      # Strip surrounding double quotes
+      if [[ "$value" =~ ^\"(.*)\"$ ]]; then
+        value="${BASH_REMATCH[1]}"
+      # Strip surrounding single quotes
+      elif [[ "$value" =~ ^\'(.*)\'$ ]]; then
+        value="${BASH_REMATCH[1]}"
+      fi
+
+      # Only export if shell hasn't already set it
+      if [ -z "${!key+x}" ]; then
+        export "$key=$value"
+      fi
+    fi
+  done < "$ENV_FILE"
+else
+  echo "WARN: $ENV_FILE not found. All secrets must come from shell exports."
+fi
+
+# Required (now possibly populated from .env)
+: "${OPENAI_API_KEY:?Missing OPENAI_API_KEY (export in shell or set in backend/.env)}"
+: "${JWT_SECRET:?Missing JWT_SECRET (export or set in backend/.env)}"
+: "${AUTH_USERS:?Missing AUTH_USERS (export or set in backend/.env)}"
 
 # Optional
 JWT_TTL_HOURS="${JWT_TTL_HOURS:-8}"

@@ -61,4 +61,20 @@ if [ "$FAIL" -gt 0 ]; then
 fi
 
 echo ""
+echo "Cost posture audit"
+echo "Resources actually deployed in the resource group:"
+az resource list --resource-group "${RG_NAME:-media-recon-rg}" \
+  --query "[].{Name:name, Type:type}" --output table 2>/dev/null || \
+  echo "  (RG_NAME not exported or RG missing; skip)"
+echo ""
+echo "Expected types only:"
+echo "  - Microsoft.App/managedEnvironments"
+echo "  - Microsoft.App/containerApps"
+echo "  - Microsoft.OperationalInsights/workspaces  (free 5 GB/mo)"
+echo "  - Microsoft.Web/staticSites"
+echo ""
+echo "Flag immediately if you also see:"
+echo "  - Microsoft.Insights/components               (App Insights, metered)"
+echo "  - Microsoft.ContainerRegistry/registries      (~\$5/mo Basic tier)"
+echo ""
 echo "All checks passed. Open $FRONTEND_URL in a browser, log in, upload an invoice."
