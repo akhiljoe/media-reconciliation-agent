@@ -54,8 +54,8 @@ if [ -z "$DEPLOY_TOKEN" ]; then
 fi
 
 echo ""
-echo "Deploying built assets via SWA CLI"
-swa deploy "$FRONTEND_DIR/dist" \
+echo "Deploying built assets via SWA CLI (using npx, no global install needed)"
+npx -y @azure/static-web-apps-cli deploy "$FRONTEND_DIR/dist" \
   --deployment-token "$DEPLOY_TOKEN" \
   --env production
 
