@@ -1,281 +1,163 @@
-# 🧾 AI Media Billing Reconciliation Platform
+# Media Billing Reconciliation Platform
 
-> An AI-powered system designed to automate **media invoice extraction, validation, and reconciliation** — built during a hackathon to demonstrate how AI agents and modern data workflows can eliminate manual billing verification in media operations.
+AI-powered invoice extraction and reconciliation for media agencies. Upload an invoice, get a discrepancy report against expected campaign data.
 
----
+Deployed on Azure free tier. Originally a hackathon prototype, now hardened with JWT auth, scoped CORS, and a containerized backend.
 
-## 📌 Table of Contents
+## Live Demo
 
-- [Overview](#overview)
-- [Cloud Deployment](#cloud-deployment)
-- [Architecture](#architecture)
-- [Repository Structure](#repository-structure)
-- [Components](#components)
-  - [1. Frontend](#1-frontend)
-  - [2. Backend](#2-backend)
-- [Reconciliation Logic](#reconciliation-logic)
-- [Workflow](#workflow)
-- [Setup & Installation](#setup--installation)
-- [Example Use Case](#example-use-case)
-- [Hackathon Objective](#hackathon-objective)
-- [Future Improvements](#future-improvements)
-- [Contributors](#contributors)
+| Component | URL |
+|---|---|
+| Frontend | https://icy-wave-0eebc2400.7.azurestaticapps.net |
+| Backend health | https://media-recon-backend.greendesert-2f37c099.centralindia.azurecontainerapps.io/api/health |
 
----
+Demo credentials are shared separately (do not commit to git).
 
-## 📖 Overview
+## Stack
 
-Media agencies handle thousands of invoices across platforms such as TV, Digital, and Programmatic advertising. Manual reconciliation between invoices, campaign data, and billing systems is slow and error-prone.
-
-This project introduces an **AI-driven reconciliation system** that:
-
-1. Extracts structured data from invoices
-2. Standardizes invoice formats across vendors
-3. Reconciles them against expected campaign or billing data
-4. Generates detailed discrepancy reports
-5. Provides a web interface for review
-
----
-
-## ☁️ Cloud Deployment
-
-The web stack runs on Azure free tier. Full step by step plan and CLI scripts live in [`AZURE_DEPLOYMENT_PLAN.md`](./AZURE_DEPLOYMENT_PLAN.md) and [`deploy/`](./deploy/).
-
-**Stack:**
-
-| Layer | Hosting | SKU |
+| Layer | Tech | Hosting |
 |---|---|---|
-| Frontend | Azure Static Web Apps | Free |
-| Backend | Azure Container Apps (Consumption, scale to zero) | Free quota |
-| Secrets | Container Apps secrets | Free |
+| Frontend | React 18, TypeScript, Vite, React Router, Axios | Azure Static Web Apps (Free) |
+| Backend | Python 3.11, Flask, Gunicorn, CrewAI, OpenAI, PyJWT | Azure Container Apps (Consumption, scale-to-zero) |
+| Image registry | GHCR (free, private) | GitHub Container Registry |
+| Secrets | Container Apps secrets | Azure |
 
-### Deviations from the original architecture
-
-The cloud deploy intentionally narrows the surface for a free-tier demo. These differences are **deliberate**, not bugs.
-
-| Original | Deployed | Why |
-|---|---|---|
-| Mobile app (Expo) | Removed from repo | Out of scope for the web demo |
-| Email notifications (SMTP) | Routes removed from API | Avoids SMTP credential burden, reduces attack surface |
-| Login accepts any email/password | Real JWT auth against env-defined users | Demo runs publicly, needed a boundary |
-| `MediaBillingNotebook/` (Jupyter prototype + mapping JSONs) | Removed; mapping JSONs moved into `backend/mapping/` | Notebook was dev-only. Container must be self contained. |
-| Long folder names `MediaBillingReconcilliation/` and `MediaBillingReconcilliationBackend/` | Renamed to `frontend/` and `backend/` | Cleaner repo layout |
-| Vendor history persisted in `output/` CSVs | `output/` is `/tmp` inside container, lost on cold start | Project rule forbids persistent storage |
-| Always-on Flask `app.run(debug=True)` | Gunicorn 2 workers, 120 sec timeout | Production WSGI server |
-| CORS wildcard | CORS scoped to the Static Web App origin | Standard hardening |
-
-### Auth in the deployed build
-
-- Login endpoint: `POST /api/auth/login` returns a JWT.
-- Demo users are stored as `AUTH_USERS` env var (JSON map of email to werkzeug hash).
-- Token TTL: 8 hours by default (`JWT_TTL_HOURS`).
-- 5 failed login attempts triggers a 60 second per-username lockout.
-- All `/api/*` routes except `/api/health` and `/api/auth/login` require `Authorization: Bearer <jwt>`.
-
-See `backend/README.md` for env var details and how to generate password hashes.
-
----
-
-## 🏗️ Architecture
+## Architecture
 
 ```
-            +----------------------+
-            |  Media Invoice Files |
-            | (PDF / Image / CSV)  |
-            +----------+-----------+
-                       |
-                       v
-             +--------------------+
-             | AI Extraction Layer|
-             |  (CrewAI Agents)   |
-             +--------------------+
-                       |
-                       v
-             +--------------------+
-             | Structured Invoice |
-             |      Data          |
-             +--------------------+
-                       |
-                       v
-             +--------------------+
-             | Reconciliation     |
-             | Logic Engine       |
-             +--------------------+
-                       |
-                       v
-             +--------------------+
-             | Web Dashboard      |
-             | Reconciliation     |
-             | Review             |
-             +--------------------+
+[ Browser ]
+     |
+     | 1. POST /api/auth/login -> JWT
+     | 2. Authorization: Bearer <jwt> on every API call
+     v
+[ Azure Static Web Apps ]   eastasia, free SKU
+     |
+     | HTTPS, CORS scoped to SWA origin
+     v
+[ Azure Container Apps ]    centralindia, scale-to-zero
+     |
+     | image pulled from
+     v
+[ ghcr.io/akhiljoe/media-recon-backend ]   private
+     |
+     | OpenAI calls (key from Container App secret)
+     v
+[ OpenAI API ]
 ```
 
----
+No database. No persistent storage. Mapping JSONs baked into the container.
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 media-recon-azure/
-│
-├── frontend/                   # React + Vite web dashboard
-│
-├── backend/                    # Flask API + JWT auth + Dockerfile
-│
-├── deploy/                     # Azure deploy scripts
-│
-├── AZURE_DEPLOYMENT_PLAN.md    # Step by step Azure deploy guide
-│
-└── README.md
+├── frontend/                   React + Vite SPA
+├── backend/                    Flask API + Dockerfile + mapping JSONs
+├── deploy/                     Azure deploy scripts (project-specific)
+├── deploy-template/            Reusable template for similar projects
+├── AZURE_DEPLOYMENT_PLAN.md    Step by step deploy guide
+├── LEARNINGS.md                Field report from the deploy
+└── README.md                   This file
 ```
 
----
+## Reconciliation Logic
 
-## 🧩 Components
+The engine compares extracted invoice data against vendor mapping JSONs using **fuzzy matching** across multiple fields:
 
-### 1. Frontend
+| Field | Matching strategy |
+|---|---|
+| Campaign name | String similarity, threshold 0.8 |
+| Insertion order ID | String similarity, threshold 0.9 |
+| Booked / billed impressions | Numeric, tolerance 5% |
+| Net cost | Numeric, tolerance 5% |
+| Date range / duration | Computed from `Dates` field |
+| Geo, ad unit, format | Text similarity |
 
-A web-based interface to **review discrepancies and reconciliation results** in detail.
+Each line item gets an overall match score. Items below 0.7 land in "no match found". Items above 0.7 with field-level discrepancies generate a discrepancy report with severity levels (LOW, MEDIUM, HIGH, CRITICAL).
 
-#### ✨ Features
+A **trust score** (0 to 100) summarizes the whole invoice. Vendor-level history is also aggregated into a vendor performance grade.
 
-- Login with JWT auth
-- Upload invoices (PDF, image, CSV, XLSX)
-- View extracted invoice data side-by-side
-- Compare expected vs. billed amounts
-- Drill into individual discrepancies
-- Generate and export reconciliation reports
-
-#### 🛠️ Tech Stack
-
-- React 18
-- TypeScript
-- Vite
-- React Router
-- Axios
-
-#### 🖥️ Key UI Components
-
-| Component | Purpose |
-|-----------|---------|
-| `Login` | JWT-backed authentication form |
-| `InvoiceExtractor` | Upload and extract invoice data |
-| `DiscrepancyReport` | High-level report of all flagged issues |
-| `DiscrepancyReview` | Detailed view for individual discrepancies |
-
----
-
-### 2. Backend
-
-Flask API that handles invoice extraction, reconciliation, and AI-driven analysis.
-
-#### ✨ Features
-
-- Multi-format document ingestion (PDF, Image, CSV, XLSX, XML, HTML, TXT)
-- AI-powered field extraction via CrewAI
-- Vendor-specific invoice format mapping
-- Fuzzy reconciliation against bundled mapping JSONs
-- Trust score and vendor performance scoring
-- JWT auth with per-user rate limiting
-
-#### 🤖 AI Agents
-
-The system uses a **multi-agent architecture** powered by CrewAI:
-
-| Agent | Responsibility |
-|-------|---------------|
-| Data Extraction Agent | Parses raw invoice documents |
-| Invoice Normalization Agent | Maps vendor formats to standard schema |
-| Discrepancy Analyst | Reasons over flagged differences |
-| Remediation Specialist | Suggests action plans |
-
-#### 🛠️ Tech Stack
-
-- Python 3.11
-- Flask + Flask-CORS + Gunicorn
-- CrewAI
-- OpenAI
-- PyJWT
-- pdfplumber, pytesseract (OCR), pandas, openpyxl
-- Docker
-
-#### 🗂️ Invoice Mappings
-
-Vendor invoice templates are standardized using JSON mappings bundled inside `backend/mapping/`:
+## Workflow
 
 ```
-backend/mapping/
-├── media_invoice_1.json
-├── media_invoice_2.json
-├── media_invoice_3.json
-├── media_invoice_4.json
-└── media_invoice_5.json
+Upload invoice (PDF, image, CSV, XLSX, HTML, TXT)
+       |
+       v
+AI extraction (CrewAI)
+  - Invoice header (vendor, dates, totals)
+  - Line items (campaign, IO, impressions, cost, etc.)
+       |
+       v
+Normalize to canonical schema
+       |
+       v
+Fuzzy match against bundled mapping JSONs
+       |
+       v
+Discrepancy report
+  - per-field severity
+  - trust score
+  - vendor performance grade
+       |
+       v
+Optional: AI reasoning + remediation plan per discrepancy
 ```
 
-These convert vendor-specific invoices into a **common schema** for downstream reconciliation.
+## Auth
 
----
+JWT (HS256) signed with `JWT_SECRET`. Token TTL 8 hours.
 
-## ⚖️ Reconciliation Logic
+Users defined in `AUTH_USERS` env var as JSON: `{"email": "<werkzeug-hash>"}`.
 
-The reconciliation engine compares invoice data against expected campaign data across key fields:
+| Route | Auth |
+|---|---|
+| `GET /api/health` | Public |
+| `POST /api/auth/login` | Public |
+| Everything else under `/api/*` | `Authorization: Bearer <jwt>` required |
 
-| Field | Source: Invoice | Source: Expected |
-|-------|-----------------|------------------|
-| Campaign | Invoice | Campaign system |
-| Media Vendor | Invoice | Contract |
-| Amount | Invoice | Planned spend |
-| Impressions | Invoice | Delivery report |
-| Billing Period | Invoice | Campaign schedule |
+Rate limit: 5 failed login attempts per username triggers a 60 second lockout (in-memory, per replica).
 
-### 🚩 Flagged Discrepancy Types
-
-- **Overbilling** — Invoice amount exceeds contracted or planned spend
-- **Missing Campaign Data** — Invoice references an unrecognized campaign
-- **Incorrect Billing Period** — Dates do not align with the campaign schedule
-- **Media Vendor Mismatch** — Vendor name or ID does not match contract records
-
----
-
-## 🔄 Workflow
-
-```
-Step 1 ── Upload Invoice
-           └─ Via web interface
-
-Step 2 ── AI Extraction
-           └─ Agents extract: Vendor, Campaign, Invoice Amount,
-              Billing Period, Media Type, Line Items
-
-Step 3 ── Data Normalization
-           └─ Vendor-specific formats → standard schema
-
-Step 4 ── Reconciliation
-           └─ Invoice data compared against expected campaign data
-
-Step 5 ── Discrepancy Report
-           └─ Flags mismatches, anomalies, and potential billing errors
+Generate a password hash:
+```bash
+python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('your-password'))"
 ```
 
----
-
-## ⚙️ Setup & Installation
+## Local Setup
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.11+
 - Node.js 18+
-- npm
+- Docker Desktop (only if you want to test the container locally)
 
-### Clone the Repository
+### Backend
 
 ```bash
-git clone https://github.com/akhiljoe/media-reconciliation-agent.git
-cd media-reconciliation-agent
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
----
+Create `backend/.env`:
 
-### 🌐 Running the Web Dashboard
+```
+OPENAI_API_KEY=sk-proj-...
+JWT_SECRET=any-long-random-string
+AUTH_USERS={"akhil@demo.com": "scrypt:..."}
+JWT_TTL_HOURS=8
+ALLOWED_ORIGINS=http://localhost:3000
+```
+
+Run:
+
+```bash
+python app.py
+```
+
+Listens on `http://localhost:5000`.
+
+### Frontend
 
 ```bash
 cd frontend
@@ -283,89 +165,107 @@ npm install
 npm run dev
 ```
 
-Vite serves on **http://localhost:3000** (forced by `vite.config.ts`).
+Opens on `http://localhost:3000`. Default API base is `http://localhost:5000/api`.
 
-> Note: the `start_frontend.sh` script comment incorrectly says port 5173. The actual port is 3000.
+Override the API base:
+```bash
+echo "VITE_API_BASE_URL=http://localhost:5001/api" > .env.local
+npm run dev
+```
 
-### 🔧 Running the Backend API
+### Run backend in Docker (optional)
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Configure .env with required vars (see backend README)
-# Required: OPENAI_API_KEY, JWT_SECRET, AUTH_USERS
-
-python app.py
+docker build -t media-recon-backend:local .
+docker run --rm -p 5001:5000 \
+  --env-file .env \
+  -e ALLOWED_ORIGINS=http://localhost:3000 \
+  media-recon-backend:local
 ```
 
-Backend listens on **http://localhost:5000**.
+`--env-file` does not strip surrounding quotes. Make sure values in `.env` are unquoted.
 
-Login uses real auth now. Generate a password hash:
+## Cloud Deployment
 
-```bash
-python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('your-password'))"
+Full step by step deploy lives in [`AZURE_DEPLOYMENT_PLAN.md`](./AZURE_DEPLOYMENT_PLAN.md). Scripts are in [`deploy/`](./deploy/).
+
+Stack is free-tier focused: Container Apps Consumption (scale-to-zero), GHCR for image hosting (avoids paid Azure Container Registry), Static Web Apps Free SKU.
+
+For a battle-tested record of what worked and what did not, read [`LEARNINGS.md`](./LEARNINGS.md).
+
+To deploy a similar project (any Dockerized backend + Vite SPA), copy [`deploy-template/`](./deploy-template/) and follow its README.
+
+## Deviations from the Original Hackathon Build
+
+This is a deliberately narrowed version of the original prototype. The differences below are intentional, not bugs.
+
+| Original | Current | Why |
+|---|---|---|
+| Mobile app (Expo / React Native) | Removed from repo | Out of scope for the web demo |
+| Email notifications (SMTP) | Routes removed from API | Avoids SMTP credentials, reduces attack surface |
+| Login accepted any email/password | Real JWT auth against env-defined users | Demo runs publicly, needs a boundary |
+| `MediaBillingNotebook/` Jupyter prototype | Removed; mapping JSONs moved to `backend/mapping/` | Notebook was dev-only; container must be self-contained |
+| `MediaBillingReconcilliation/` and `MediaBillingReconcilliationBackend/` | Renamed to `frontend/` and `backend/` | Cleaner repo layout |
+| Vendor history in persistent `output/` CSVs | Ephemeral `/tmp/output` inside container | Project rule forbids persistent storage |
+| `app.run(debug=True)` Flask dev server | Gunicorn 2 workers, 120 sec timeout | Production WSGI server |
+| CORS wildcard | CORS scoped to the SWA origin | Standard hardening |
+
+## Project Layout Inside `backend/`
+
+```
+backend/
+├── app.py                          Flask app + routes
+├── Dockerfile                      Container build for Azure
+├── .dockerignore
+├── requirements.txt
+├── api/                            (placeholder)
+├── services/
+│   ├── auth.py                     JWT auth + @require_auth decorator
+│   ├── invoice_extractor.py        File to canonical invoice JSON
+│   ├── invoice_reconciliation.py   Fuzzy match + trust scoring
+│   ├── discrepancy_agent.py        CrewAI analysis
+│   └── email_service.py            Kept on disk, unused
+├── utils/
+│   └── file_parsers.py             PDF/CSV/XLSX/image parsing
+├── mapping/                        Vendor invoice mapping JSONs
+└── uploads/                        Local upload dir (container uses /tmp instead)
 ```
 
-Add to `.env`:
+## API Endpoints
 
-```
-AUTH_USERS={"akhil@demo.com": "scrypt:..."}
-JWT_SECRET=any-long-random-string
-```
+Public:
 
-Mapping JSONs are bundled in `backend/mapping/`.
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/health` | Liveness check |
+| POST | `/api/auth/login` | Returns JWT for valid `username`/`password` |
 
----
+Protected (require `Authorization: Bearer <jwt>`):
 
-## 💡 Example Use Case
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/upload-file` | Generic file parser |
+| POST | `/api/extract-invoice` | Extract canonical invoice JSON |
+| POST | `/api/reconcile-invoice` | Run reconciliation against mapping |
+| POST | `/api/analyze-discrepancy` | AI reasoning for one discrepancy |
+| POST | `/api/analyze-discrepancies-batch` | AI reasoning for multiple discrepancies |
+| GET | `/api/vendor-scores` | Aggregate vendor performance from history |
 
-Media agencies often receive hundreds of invoices monthly. Historically, manual verification required:
+See [`backend/README.md`](./backend/README.md) for env var reference.
 
-- 📥 **Downloading** individual invoices from multiple platforms
-- 🔍 **Checking** campaign schedules manually in spreadsheets
-- 🔢 **Matching** amounts against internal records line by line
-- 📊 **Generating** status reports for finance and operations teams
+## Future Work
 
-This system replaces all of these manual steps with an **automated, intelligent workflow** — reducing processing time from days to minutes.
+- Persistent storage (Cosmos DB or Postgres) for cross-session vendor history
+- Custom domain with managed cert
+- Application Insights for proper observability
+- GitHub Actions to auto-build + push to GHCR on every push to main
+- Migration from env-defined users to Entra ID or B2C for production-grade auth
+- Direct connectors to Google Ads, Meta, DV360 for live campaign data
+- Real-time pipeline instead of batch upload
+- ML anomaly detection on top of fuzzy matching
 
----
+## Contributors
 
-## 🏆 Hackathon Objective
-
-The goal of this hackathon project was to demonstrate how **AI agents can transform operational workflows** in media finance and billing operations.
-
-### Key Outcomes
-
-| Outcome | Description |
-|---------|-------------|
-| 🤖 Automated Invoice Parsing | Eliminates manual data entry across invoice formats |
-| 📐 Standardized Data Extraction | Ensures consistent formatting across different vendors |
-| 🔗 Intelligent Reconciliation | Automatically matches invoices against campaign schedules |
-| 📊 Interactive Dashboards | Visual insights into billing status and discrepancies |
-
----
-
-## 🚀 Future Improvements
-
-Potential enhancements to scale this prototype into a production-grade tool:
-
-- **Full Backend API Service** — Seamless integration with existing software stacks
-- **Platform Integration** — Direct connections with Google Ads, Meta, and DV360
-- **Automated Fraud Detection** — Identifying suspicious or anomalous billing patterns
-- **ML Anomaly Detection** — Flagging statistical outliers in pricing or volume data
-- **Real-time Reconciliation Pipelines** — Processing invoices as they arrive
-- **Enterprise Billing Integration** — Syncing directly with ERP and finance systems
-
----
-
-## 👥 Contributors
-
-- **Hackathon Team** — original prototype team
-
----
-
-> *Built with ❤️ at a hackathon to modernize media billing operations using AI.*
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+Originally built by a team as a hackathon prototype.
+Hardened and deployed to Azure by Akhil Joe (2026).
