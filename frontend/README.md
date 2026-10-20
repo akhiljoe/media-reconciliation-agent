@@ -19,14 +19,14 @@ npm run dev
 
 Opens on **http://localhost:3000** (forced by `vite.config.ts`).
 
-The app calls the backend at whatever `VITE_API_BASE_URL` resolves to. Default fallback is `http://localhost:5000/api` (the local Flask backend).
-
-To point at a different backend (such as a dockerized one on host port 5001):
+The app calls the backend at whatever `VITE_API_BASE_URL` resolves to. Without it, the fallback is the relative path `/api`, and the Vite dev server has no proxy, so set it for local development:
 
 ```bash
-echo "VITE_API_BASE_URL=http://localhost:5001/api" > .env.local
+echo "VITE_API_BASE_URL=http://localhost:5000/api" > .env.local   # local Flask backend
 npm run dev
 ```
+
+Use port 5001 instead if you run the backend in Docker on that host port.
 
 `.env.local` is gitignored.
 
@@ -42,7 +42,7 @@ Output lands in `dist/`. The Azure deploy script (`../deploy/04-deploy-frontend.
 
 | Var | Required | Default | Notes |
 |---|---|---|---|
-| `VITE_API_BASE_URL` | No | `http://localhost:5000/api` | Backend root including `/api` |
+| `VITE_API_BASE_URL` | Yes, except same-origin deploys | `/api` | Backend root including `/api` |
 
 ## Auth Flow
 

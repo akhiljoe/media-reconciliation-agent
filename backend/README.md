@@ -40,4 +40,49 @@ backend/
    ```
    OPENAI_API_KEY=sk-proj-...
    JWT_SECRET=any-long-random-string
-   AUTH_USERS={"akhil@demo.com":"<werkze
+   AUTH_USERS={"demo@example.com":"<werkzeug password hash>"}
+   ALLOWED_ORIGINS=http://localhost:3000
+   ```
+
+   Generate a password hash:
+   ```bash
+   python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('your-password'))"
+   ```
+
+4. Run:
+   ```bash
+   python app.py
+   ```
+   Serves on <http://localhost:5000>. Check <http://localhost:5000/api/health>.
+
+## Environment Variables
+
+| Var | Required | Default | Notes |
+|---|---|---|---|
+| `OPENAI_API_KEY` | Yes | | Used by the extraction and discrepancy agents |
+| `JWT_SECRET` | Yes | `dev-secret-change-me` | Signs login tokens; always set in any shared deployment |
+| `AUTH_USERS` | Yes | | JSON map of username to werkzeug password hash |
+| `ALLOWED_ORIGINS` | No | `http://localhost:3000` | Comma-separated CORS origins |
+| `JWT_TTL_HOURS` | No | `8` | Token lifetime |
+| `PORT` | No | `5000` | |
+| `FLASK_DEBUG` | No | `true` | Set `false` outside local dev (the container uses Gunicorn) |
+| `UPLOAD_FOLDER`, `MAPPING_FOLDER`, `OUTPUT_FOLDER` | No | `uploads/`, `mapping/`, `output/` | |
+
+## API
+
+All routes except health and login require `Authorization: Bearer <token>`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/health` | Liveness check |
+| POST | `/api/auth/login` | Exchange username + password for a JWT |
+| POST | `/api/upload-file` | Upload an invoice file |
+| POST | `/api/extract-invoice` | Extract fields into the canonical invoice schema |
+| POST | `/api/reconcile-invoice` | Reconcile an invoice against the vendor mapping |
+| GET | `/api/vendor-scores` | Vendor trust scores and grades |
+| POST | `/api/analyze-discrepancy` | AI analysis of one discrepancy |
+| POST | `/api/analyze-discrepancies-batch` | AI analysis of several discrepancies |
+
+## Supported Input Formats
+
+PDF, images (JPG, PNG, GIF, BMP), CSV, Excel (XLS, XLSX), XML, JSON and TXT. See `utils/file_parsers.py`.

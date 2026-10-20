@@ -4,14 +4,31 @@ An AI-powered web application that ingests media invoices, normalizes them to a 
 
 Built originally as a hackathon prototype, then hardened with real auth, scoped CORS, and a containerized deploy on Azure free tier.
 
-## Live Demo
+## Run it locally
 
-| Component | URL |
-|---|---|
-| Frontend | https://icy-wave-0eebc2400.7.azurestaticapps.net |
-| Backend health | https://media-recon-backend.greendesert-2f37c099.centralindia.azurecontainerapps.io/api/health |
+Requires Python 3.11+, Node 20+ and an OpenAI API key. All invoice data in this repo is synthetic sample data.
 
-Demo credentials shared separately.
+```bash
+# Backend (http://localhost:5000)
+cd backend
+python3 -m venv ../venv && source ../venv/bin/activate
+pip install -r requirements.txt
+cat > .env <<'ENV'
+OPENAI_API_KEY=sk-...
+JWT_SECRET=any-long-random-string
+AUTH_USERS={"demo@example.com":"<werkzeug password hash>"}
+ENV
+python app.py
+
+# Frontend (http://localhost:3000), in a second terminal
+cd frontend
+echo "VITE_API_BASE_URL=http://localhost:5000/api" > .env.local
+npm install && npm run dev
+```
+
+Generate the password hash with `python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('your-password'))"`. More detail in [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md).
+
+To deploy on Azure free tier (Static Web Apps + Container Apps), follow the numbered scripts in [deploy/](deploy/); `99-teardown.sh` removes everything. The demo deployment has been torn down.
 
 ---
 
@@ -21,7 +38,7 @@ Media agencies handle thousands of vendor invoices each month across TV, digital
 
 The platform automates four steps that previously consumed days of analyst time:
 
-1. **Ingest** vendor invoices in any common format (PDF, image, CSV, XLSX, HTML, TXT).
+1. **Ingest** vendor invoices in any common format (PDF, image, CSV, Excel, XML, JSON, TXT).
 2. **Extract** structured fields using AI agents.
 3. **Normalize** vendor-specific layouts to a canonical schema.
 4. **Reconcile** invoice data against expected campaign data and surface discrepancies.
@@ -74,7 +91,7 @@ The Flask app is intentionally thin. It routes requests to four service modules:
 | `services/invoice_extractor.py` | File-to-canonical-JSON pipeline. Calls into `utils/file_parsers.py`. |
 | `services/invoice_reconciliation.py` | Fuzzy match against mapping data, trust score, vendor performance grade |
 | `services/discrepancy_agent.py` | CrewAI multi-agent reasoning for individual discrepancies |
-| `utils/file_parsers.py` | Format-aware parsing: PDF (pdfplumber), images (pytesseract OCR), XLSX (openpyxl), CSV / HTML / TXT |
+| `utils/file_parsers.py` | Format-aware parsing: PDF (pdfplumber), images (pytesseract OCR), XLS/XLSX (openpyxl), CSV / XML / JSON / TXT |
 
 This separation lets the reconciliation engine evolve independently of the AI features. AI calls are lazy: importing the discrepancy agent does not load CrewAI until a route actually uses it.
 
@@ -298,3 +315,7 @@ Production-grade extensions that were intentionally out of scope:
 
 Originally built as a team hackathon prototype.
 Hardened, containerized, and deployed to Azure by Akhil Joe (2026).
+
+## License
+
+[MIT](LICENSE)
