@@ -69,7 +69,7 @@ flowchart TB
         Match["Fuzzy match line items<br/>string similarity +<br/>numeric tolerance"]
         Severity["Field discrepancies<br/>LOW to CRITICAL"]
         Trust["Trust score<br/>0-100"]
-        Grade["Vendor grade A-F<br/>from saved reports"]
+        Grade["Vendor grade<br/>A to F, from<br/>saved reports"]
         Expected --> Match --> Severity --> Trust --> Grade
     end
 
