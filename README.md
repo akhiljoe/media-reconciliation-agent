@@ -49,25 +49,61 @@ The platform automates four steps that previously consumed days of analyst time:
 
 ### High-level architecture
 
+An invoice goes through three stages. Only extraction and the optional analysis use an LLM; matching and scoring are deterministic.
+
+```mermaid
+flowchart TB
+    User["Analyst<br/>(React SPA)"]
+
+    subgraph Extract["1. Extract: POST /api/extract-invoice"]
+        direction TB
+        Upload["Invoice file<br/>PDF, image, Excel, CSV, XML, JSON, TXT"]
+        Parse["Format-aware reader<br/>pdfplumber, Tesseract OCR,<br/>openpyxl, csv"]
+        ExtractAgent["CrewAI extraction agent<br/>maps content to the<br/>canonical invoice schema"]
+        Validate["Fill missing durations<br/>+ schema validation"]
+        Upload --> Parse --> ExtractAgent --> Validate
+    end
+
+    subgraph Reconcile["2. Reconcile: POST /api/reconcile-invoice"]
+        direction TB
+        Expected[("Expected campaign data<br/>mapping JSONs")]
+        Normalize["Normalize expected data"]
+        Match["Fuzzy match line items<br/>string similarity + numeric tolerance"]
+        Severity["Field discrepancies<br/>LOW / MEDIUM / HIGH / CRITICAL"]
+        Trust["Trust score 0-100<br/>EXCELLENT to CRITICAL"]
+        Report[("Discrepancy report<br/>output/*.csv")]
+        Grade["Vendor grade A-F<br/>from past reports"]
+        Expected --> Normalize --> Match
+        Match --> Severity --> Trust --> Report --> Grade
+    end
+
+    subgraph Analyze["3. Analyze (optional): POST /api/analyze-discrepancy"]
+        direction TB
+        Analyst["CrewAI Discrepancy Analyst<br/>root cause, impact"]
+        Remediate["CrewAI Remediation Specialist<br/>action plan"]
+        Analyst --> Remediate
+    end
+
+    OpenAI(["OpenAI API"])
+
+    User -->|upload| Upload
+    Validate -->|canonical invoice JSON| Match
+    Grade -->|report + trust score + grade| User
+    User -->|Analyze a discrepancy| Analyst
+    Remediate -->|reasoning + plan| User
+    ExtractAgent -.-> OpenAI
+    Analyst -.-> OpenAI
+    Remediate -.-> OpenAI
 ```
-[ Browser ]
-     |
-     | HTTPS
-     v
-[ Static Web Apps ]   React + Vite SPA, served from Azure CDN edge
-     |
-     | API calls with Authorization: Bearer <jwt>
-     | CORS scoped to SWA origin
-     v
-[ Container Apps ]    Flask + gunicorn, scale-to-zero, JWT-protected
-     |
-     | image pull
-     v
-[ GHCR ]              private container image registry
-     |
-     | (during request handling)
-     v
-[ OpenAI API ]        used by CrewAI agents
+
+### Deployment
+
+```mermaid
+flowchart LR
+    Browser["Browser"] -->|HTTPS| SWA["Azure Static Web Apps<br/>React + Vite build"]
+    Browser -->|"API calls, Bearer JWT<br/>CORS scoped to SWA origin"| ACA["Azure Container Apps<br/>Flask + Gunicorn, scale-to-zero"]
+    ACA -.->|LLM calls| OpenAI(["OpenAI API"])
+    GHCR[("GHCR<br/>container image")] -.->|image pull at deploy| ACA
 ```
 
 ### Why this shape
