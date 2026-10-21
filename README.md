@@ -53,32 +53,30 @@ An invoice goes through three stages. Only extraction and the optional analysis 
 
 ```mermaid
 flowchart TB
-    User["Analyst<br/>(React SPA)"]
+    Upload["Analyst uploads a vendor invoice<br/>PDF, image, Excel, CSV, XML, JSON, TXT"]
 
-    subgraph Extract["1. Extract: POST /api/extract-invoice"]
-        direction TB
-        Upload["Invoice file<br/>PDF, image, Excel, CSV, XML, JSON, TXT"]
+    subgraph Extract["1. Extract · POST /api/extract-invoice"]
+        direction LR
         Parse["Format-aware reader<br/>pdfplumber, Tesseract OCR,<br/>openpyxl, csv"]
         ExtractAgent["CrewAI extraction agent<br/>maps content to the<br/>canonical invoice schema"]
         Validate["Fill missing durations<br/>+ schema validation"]
-        Upload --> Parse --> ExtractAgent --> Validate
+        Parse --> ExtractAgent --> Validate
     end
 
-    subgraph Reconcile["2. Reconcile: POST /api/reconcile-invoice"]
-        direction TB
+    subgraph Reconcile["2. Reconcile · POST /api/reconcile-invoice · deterministic"]
+        direction LR
         Expected[("Expected campaign data<br/>mapping JSONs")]
-        Normalize["Normalize expected data"]
-        Match["Fuzzy match line items<br/>string similarity + numeric tolerance"]
-        Severity["Field discrepancies<br/>LOW / MEDIUM / HIGH / CRITICAL"]
-        Trust["Trust score 0-100<br/>EXCELLENT to CRITICAL"]
-        Report[("Discrepancy report<br/>output/*.csv")]
-        Grade["Vendor grade A-F<br/>from past reports"]
-        Expected --> Normalize --> Match
-        Match --> Severity --> Trust --> Report --> Grade
+        Match["Fuzzy match line items<br/>string similarity +<br/>numeric tolerance"]
+        Severity["Field discrepancies<br/>LOW to CRITICAL"]
+        Trust["Trust score<br/>0-100"]
+        Grade["Vendor grade A-F<br/>from saved reports"]
+        Expected --> Match --> Severity --> Trust --> Grade
     end
 
-    subgraph Analyze["3. Analyze (optional): POST /api/analyze-discrepancy"]
-        direction TB
+    Results["Discrepancy report in the UI<br/>flagged fields, trust score, vendor grade"]
+
+    subgraph Analyze["3. Analyze · optional · POST /api/analyze-discrepancy"]
+        direction LR
         Analyst["CrewAI Discrepancy Analyst<br/>root cause, impact"]
         Remediate["CrewAI Remediation Specialist<br/>action plan"]
         Analyst --> Remediate
@@ -86,14 +84,12 @@ flowchart TB
 
     OpenAI(["OpenAI API"])
 
-    User -->|upload| Upload
-    Validate -->|canonical invoice JSON| Match
-    Grade -->|report + trust score + grade| User
-    User -->|Analyze a discrepancy| Analyst
-    Remediate -->|reasoning + plan| User
-    ExtractAgent -.-> OpenAI
-    Analyst -.-> OpenAI
-    Remediate -.-> OpenAI
+    Upload --> Extract
+    Extract -->|canonical invoice JSON| Reconcile
+    Reconcile --> Results
+    Results -->|analyze one discrepancy| Analyze
+    Extract -.->|LLM| OpenAI
+    Analyze -.->|LLM| OpenAI
 ```
 
 ### Deployment
